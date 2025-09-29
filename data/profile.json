@@ -1,0 +1,33 @@
+{
+  "personal_info": {
+    "name": "Alberto Dian",
+    "email": "albertodian.ad@gmail.com",
+    "phone": "+39 3311118195",
+    "nationality": "Italian",
+    "linkedin": "https://www.linkedin.com/in/alberto-dian-589322209",
+    "github": "https://github.com/albertodian"
+  },
+  "summary": "Robotics and AI engineer passionate about building intelligent systems.",
+  "skills": ["Python", "C++", "ROS", "Deep Learning", "Computer Vision"],
+  "education": [
+    {
+      "degree": "MSc Robotics Engineering",
+      "institution": "Tech University",
+      "year": "2023"
+    }
+  ],
+  "experience": [
+    {
+      "title": "AI & Robotics Engineer",
+      "company": "StartupX",
+      "years": "2023–present",
+      "description": "Developed algorithms for robotic manipulation tasks."
+    }
+  ],
+  "projects": [
+    {
+      "name": "Teleoperation with Oculus and Unity",
+      "description": "Captured episodes for VLA model training."
+    }
+  ]
+}
