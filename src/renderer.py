@@ -12,9 +12,9 @@ def render_cv_pdf_html(profile, template_path="templates/cv_template.html", outp
     rendered_html = template.render(**profile)
 
     # Write HTML for debugging
-    html_file = output_pdf.replace(".pdf", ".html")
-    with open(html_file, "w", encoding="utf-8") as f:
-        f.write(rendered_html)
+    # html_file = output_pdf.replace(".pdf", ".html")
+    # with open(html_file, "w", encoding="utf-8") as f:
+    #     f.write(rendered_html)
 
     # Convert to PDF
     HTML(string=rendered_html).write_pdf(output_pdf)
