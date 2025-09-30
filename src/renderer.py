@@ -1,30 +1,47 @@
 from jinja2 import Template
+from weasyprint import HTML
 import subprocess
 import os
 
-def render_cv_pdf(profile: dict, 
-                  template_path: str = "templates/cv_template.tex", 
-                  output_pdf: str = "output/cv_output.pdf"):
-    """
-    Render the CV LaTeX template with the optimized profile and compile to PDF.
-    """
+
+def render_cv_pdf_html(profile, template_path="templates/cv_template.html", output_pdf="output/cv_output.pdf"):
     with open(template_path, "r", encoding="utf-8") as f:
         template_content = f.read()
 
     template = Template(template_content)
+    rendered_html = template.render(**profile)
+
+    # Write HTML for debugging
+    html_file = output_pdf.replace(".pdf", ".html")
+    with open(html_file, "w", encoding="utf-8") as f:
+        f.write(rendered_html)
+
+    # Convert to PDF
+    HTML(string=rendered_html).write_pdf(output_pdf)
+    print(f"CV generated: {output_pdf}")
+
+def render_cv_pdf_latex(profile: dict,
+                  template_path: str = "templates/cv_template.tex",
+                  output_pdf: str = "output/cv_output.pdf"):
+
+    with open(template_path, "r", encoding="utf-8") as f:
+        template_content = f.read()
+
+    template = Template(template_content)
+
     rendered_tex = template.render(
-        **profile.get("personal_info", {}),
+        personal_info=profile.get("personal_info", {}),
         summary=profile.get("summary", ""),
-        skills=profile.get("skills", []),
         experience=profile.get("experience", []),
-        education=profile.get("education", [])
+        education=profile.get("education", []),
+        projects=profile.get("projects", []),
+        skills=profile.get("skills", [])  
     )
 
     tex_file = os.path.splitext(output_pdf)[0] + ".tex"
     with open(tex_file, "w", encoding="utf-8") as f:
         f.write(rendered_tex)
 
-    # compile PDF
     subprocess.run(["pdflatex", "-interaction=nonstopmode", tex_file], check=True)
     print(f"CV generated: {output_pdf}")
 

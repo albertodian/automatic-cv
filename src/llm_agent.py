@@ -21,7 +21,7 @@ def generate_optimized_profile(profile: dict, job_info: dict, model_name: str) -
         - Return a JSON object representing the optimized CV.
         - Select the most relevant skills and experience from the candidate profile.
         - Rewrite the summary to highlight relevance to the job posting.
-        - **Explicitly include the 'keywords' from the job_info JSON verbatim** wherever appropriate in skills, summary, or experience.
+        - **Explicitly include the 'keywords' from the job_info JSON verbatim** wherever APPROPRIATE in skills, summary, experience or projects.
         - Do NOT invent new skills or experience not in the candidate profile.
         - Keep the format consistent with the input profile (sections, skills, education, etc.).
         - Ensure the result is valid JSON.
@@ -32,13 +32,25 @@ def generate_optimized_profile(profile: dict, job_info: dict, model_name: str) -
         messages=[{"role": "user", "content": prompt}]
     )
 
-    content = response['message']['content']
-    try:
-        optimized = json.loads(content)
-    except json.JSONDecodeError:
-        raise ValueError("Model did not return valid JSON:\n" + content)
+    content = response["message"]["content"]
 
-    return optimized
+    # Extract the JSON block (between ```json ... ```)
+    match = re.search(r"```json\s*(\{.*?\})\s*```", content, re.DOTALL)
+    if not match:
+        raise ValueError("No JSON block found in response:\n" + content)
+
+    json_str = match.group(1).strip()
+
+    try:
+        optimized_cv = json.loads(json_str)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON extracted:\n{json_str}") from e
+
+    # Explanation = everything outside the JSON block
+    explanation = re.sub(r"```json.*?```", "", content, flags=re.DOTALL).strip()
+
+    return optimized_cv, explanation
+
 
 
 def generate_cover_letter(profile: dict, job_text: str, model_name: str) -> str:

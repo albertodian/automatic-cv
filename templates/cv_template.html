@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ personal_info.name }} - CV</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 1.5cm;
+    }
+
+    body {
+      font-family: "Helvetica", "Arial", sans-serif;
+      line-height: 1.3;
+      font-size: 10pt;
+      color: #222;
+    }
+
+    h1, h2 {
+      font-weight: bold;
+      border-bottom: 1px solid #000;
+      padding-bottom: 0.1em;
+      margin: 0.8em 0 0.4em;
+    }
+
+    h1 {
+      font-size: 16pt;
+      border: none;
+      margin-top: 0;
+    }
+
+    h2 {
+      font-size: 11pt;
+    }
+
+    .center {
+      text-align: center;
+      margin-bottom: 0.8em;
+    }
+
+    ul {
+      margin: 0.2em 0 0.2em 1em;
+      padding: 0;
+    }
+
+    li {
+      margin-bottom: 0.2em;
+    }
+
+    .skills {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.1em 0.8em;
+      list-style-type: disc;
+    }
+
+    .small {
+      font-size: 9pt;
+      color: #555;
+    }
+
+    a {
+      color: #000;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Personal Info -->
+  <div class="center">
+    <h1>{{ personal_info.name }}</h1>
+    <p class="small">{{ personal_info.nationality }} • {{ personal_info.age }} years old</p>
+    <p class="small">Email: <a href="mailto:{{ personal_info.email }}">{{ personal_info.email }}</a> • Phone: {{ personal_info.phone }}</p>
+    <p class="small">
+      <a href="{{ personal_info.linkedin }}">LinkedIn</a> • 
+      <a href="{{ personal_info.github }}">GitHub</a>
+    </p>
+    <p class="small">Languages: 
+      {% for lang in personal_info.languages %}
+        {{ lang }}{% if not loop.last %}, {% endif %}
+      {% endfor %}
+    </p>
+  </div>
+
+  <!-- Summary -->
+  <h2>Summary</h2>
+  <p>{{ summary }}</p>
+
+  <!-- Education -->
+  <h2>Education</h2>
+  <ul>
+  {% for edu in education %}
+    <li>
+      <b>{{ edu.degree }}</b> — {{ edu.institution }} ({{ edu.year }}, {{ edu.location }})<br>
+      <span class="small">{{ edu.description }} — Grade: {{ edu.grade }}</span>
+    </li>
+  {% endfor %}
+  </ul>
+
+  <!-- Experience -->
+  <h2>Experience</h2>
+  <ul>
+  {% for exp in experience %}
+    <li>
+      <b>{{ exp.title }}</b> — {{ exp.company }} ({{ exp.years }}, {{ exp.location }})<br>
+      <span class="small">{{ exp.description }}</span>
+      {% if exp.descrition_list %}
+        <ul>
+        {% for d in exp.descrition_list %}
+          <li class="small">{{ d }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+      <span class="small"><i>Skills:</i> {% for s in exp.skills %}{{ s }}{% if not loop.last %}, {% endif %}{% endfor %}</span>
+      {% if exp.reference %}
+        <br><span class="small">Reference: {{ exp.reference }} - <a href="{{ exp.reference_letter_url }}">Letter</a></span>
+      {% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+
+  <!-- Projects -->
+  <h2>Projects</h2>
+  <ul>
+  {% for project in projects %}
+    <li>
+      <b>{{ project.name }}</b> ({{ project.year }}) — {{ project.role }}<br>
+      <span class="small">{{ project.description }}</span>
+      {% if project.skills %}
+        <ul>
+        {% for s in project.skills %}
+          <li class="small">{{ s }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+      {% if project.url %}
+        <a href="{{ project.url }}">Project Link</a>
+      {% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+
+  <!-- Skills -->
+  <h2>Skills</h2>
+  <ul class="skills">
+    {% for s in skills %}
+      <li class="small">{{ s }}</li>
+    {% endfor %}
+  </ul>
+
+</body>
+</html>

@@ -4,30 +4,125 @@
     "email": "albertodian.ad@gmail.com",
     "phone": "+39 3311118195",
     "nationality": "Italian",
+    "age": 24,
     "linkedin": "https://www.linkedin.com/in/alberto-dian-589322209",
-    "github": "https://github.com/albertodian"
+    "github": "https://github.com/albertodian",
+    "languages": ["Italian (native)", "English (C1)", "Spanish (B1), German (A1)"]
   },
   "summary": "Robotics and AI engineer passionate about building intelligent systems.",
-  "skills": ["Python", "C++", "ROS", "Deep Learning", "Computer Vision"],
   "education": [
     {
-      "degree": "MSc Robotics Engineering",
-      "institution": "Tech University",
-      "year": "2023"
+      "degree": "Double MSc in Robotics and Artificial Intelligence",
+      "institution": "University of Trento & Aalto University",
+      "location": "Trento, Italy & Espoo, Finland",
+      "year": "September 2023 - August 2025",
+      "description": "Specialized in Autonomous Systems, Machine Learning, and Computer Vision.",
+      "grade": "Graduated with Honors"
+    },
+    {
+      "degree": "BSc in Computer, Communications and Electronic Engineering",
+      "institution": "University of Trento",
+      "location": "Trento, Italy",
+      "year": "September 2020 - July 2023",
+      "description": "Focused on Software Engineering, Signal Processing, and Embedded Systems.",
+      "grade": "104/110"
     }
   ],
   "experience": [
     {
-      "title": "AI & Robotics Engineer",
-      "company": "StartupX",
-      "years": "2023–present",
-      "description": "Developed algorithms for robotic manipulation tasks."
+      "title": "AI & Robotics Engineer Intern",
+      "company": "Huawei Munich Research Center",
+      "location": "Munich, Germany",
+      "years": "January 2025 - July 2025",
+      "description": "Developed MSc thesis named 'Towards Connected Intelligence: Empowering Robotic Applications with Agentic AI Frameworks'",
+      "descrition_list": [
+        "SoTA Analysis regarding Visual Language Action models in robotics (Octo, OpenVLA, EdgeVLA, ECoT VLA, SmolVLA, Pi0) and 6G-Enabled Sensing.",
+        "Designed a Teleoperation Framework from scratch to control the Mercury X1 robot using the Meta Quest 3. (ROS, ROS#, Unity, XR)",
+        "Collected ~2000 robot trajectories, designed a dataset from scratch to finetune OpenVLA-OFT model (RLDS, Tensorflow).",
+        "Enhancing VLAs capabilities using Agentic AI Frameworks (AutoGen, LangChain, LangGraph). Studying AgenticVLAs performances in human populated environments."
+      ],
+      "skills": ["Python", "ROS", "ROS#", "Unity", "MetaSDK", "VLA", "OpenVLA", "Lerobot", "LLM", "AutoGen", "Langchain", "C++", "C#", "Git", "Robotics"],
+      "reference": "Dr. Massimiliano Maule",
+      "reference_letter_url": "https://drive.google.com/file/d/1MkB-94DfJ-vR13I8-p47zmRMoSBDE_3t/view?usp=sharing"
+      
+    },
+    {
+      "title": "AI Engineer Intern",
+      "company": "Sarmap SA",
+      "location": "Caslano, Switzerland",
+      "years": "April 2023 - June 2023",
+      "description": "Development BSc thesis named 'Ternary classification of change in high-resolution SAR images using a convolutional neural network'",
+      "descrition_list": [
+        "Reviewed SAR change detection literature and CNN methods.",
+        "Gathered high-resolution SAR images from varied environments.",
+        "Preprocessed SAR data (Normalization, Co-registration).",
+        "Built a custom CNN for change detection from scratch.",
+        "Trained model with optimized hyperparameters and data augmentation."
+
+      ],
+      "skills": ["Python", "TensorFlow", "Keras", "OpenCV", "Git", "Image Processing", "SAR Images"],
+      "reference": "Dr. Paolo Pasquali",
+      "reference_letter_url": "https://drive.google.com/file/d/17uBpnvz3K-voV2fdSyMNbZHrfXChWSKu/view?usp=sharing"
+    },
+    {
+      "title": "Peer Mentor",
+      "company": "Italy Expo 2020",
+      "location": "Dubai, United Arab Emirates",
+      "years": "October 2020 - June 2022",
+      "description": "Peer Mentor for cultural and educational activities at the Italy Pavilion, Expo 2020 Dubai (online).",
+      "descrition_list": [
+        "Managed 30+ partcipants during an international hackathon.",
+        "Mentored students in STEM subjects and project development.",
+        "Organized workshops and networking events with industry professionals."
+      ],
+      "skills": ["Mentoring", "Leadership", "Business Development"]
     }
   ],
   "projects": [
-    {
-      "name": "Teleoperation with Oculus and Unity",
-      "description": "Captured episodes for VLA model training."
+    {   
+      "name": "Automatic CV Generator",
+      "role": "Developer and AI Engineer",
+      "year": "2025",
+      "description": "Developed a system to modify your CV based on a job description using LLMs to maximise the match between your profile and the job requirements. It renders the result into a clean, ATS-friendly PDF using LaTeX templates.",
+      "skills": ["Ollama", "Python", "LaTeX", "Git", "Playwright", "RestAPI", "UI/UX Design", "Streamlit", "Web Scraping"],
+      "url": "https://github.com/albertodian/automatic-cv"
+    },
+    {   
+      "name": "Groupee",
+      "role": "Developer",
+      "year": "2024",
+      "description": "Groupee is a smart app that creates balanced student teams by matching personalities and skills to boost collaboration and improve learning outcomes.",
+      "skills": ["Flutter", "Dart", "Firebase", "Figma", "UI/UX Design", "Angular", "Node.js"],
+      "url": "https://groupee-fi.web.app/landing"
+    },
+    {   
+      "name": "DRESST",
+      "role": "AI Engineer and Creative Director",
+      "year": "2024",
+      "description": "Prototyped an AI-powered fashion application to extract body measurements from front-facing camera pictures and create avatars for virtual try-ons.",
+      "skills": ["Python", "PyTorch", "OpenCV", "Blender", "UI/UX Design", "Figma", "Adobe Creative Suite", "3D Modeling", "Computer Vision", "CLO3D"],
+      "url": "https://www.instagram.com/dresst.it/"
+    },
+    {   
+      "name": "ThinkFIN",
+      "role": "AI Engineer and Creative Director",
+      "year": "2024",
+      "description": "Prototyped an AI-powered finance app to help young adults manage their finances, set budgets, and achieve financial goals.",
+      "skills": ["Ollama", "LangChain", "Python", "UI/UX Design", "Figma", "Adobe Creative Suite", "Financial Literacy"],
+      "url": ""
+    },
+    {   
+      "name": "Adaptive AI Model Enhancement",
+      "role": "AI Engineer",
+      "year": "2024",
+      "description": "Test Time Adaptation using MEMO. Focused on enhancing augmentations' effectivity, involving the use of segmentations (Segment Anything), GradCam and DINOv2.",
+      "skills": ["Python", "PyTorch", "ML", "Git", "Data Augmentation"],
+      "url": "https://drive.google.com/file/d/1TfRMWTcMW5Lrw6ZrH7d0Fd4M4U4syJaC/view"
     }
+  ],
+  "skills": [
+    "Python", "C++", "C#", "Dart", "Flutter", "TensorFlow", "Keras", "PyTorch", "OpenCV", "ROS", "ROS#", "Unity", "MetaSDK",
+    "Ollama", "LangChain", "AutoGen", "Git", "LaTeX", "Figma", "Adobe Creative Suite", "UI/UX Design",
+    "Robotics", "Machine Learning", "Computer Vision", "Image Processing", "3D Modeling"
   ]
 }
