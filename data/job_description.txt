@@ -1,99 +1,26 @@
-Softwarearchitekt - Steuerungsstationen für Simulation & Training (all gender) 
-Manching, Baviera, Germania · 4 giorni fa · 5 candidati
-Promossa da recruiter · Solitamente la valutazione richiede 1 settimana
+In the time it takes you to read this job description, RapidSOS will have handled ~1,380 emergencies.
 
+At RapidSOS, we are committed to using technology to build a safer, stronger future and working together to save lives. We’re in an exciting phase of growth, welcoming new members from across the globe to our mission-driven, ambitious, and inclusive team. Our work is founded on our values of trust and safety, pioneering, urgency, and purpose over pride, all of which support a company culture where people can innovate, collaborate, grow, and, above all, make an impact. If that sounds like an exciting opportunity, we want to hear from you!
 
-In sede
+At RapidSOS, we are empowering safer, stronger communities with faster, data-driven emergency response. In partnership with public safety, RapidSOS created the world’s first intelligent safety platform that securely links life-saving data from 600 million+ connected devices, apps and sensors and 200+ technology partners directly to RapidSOS Safety Agents, 911, and first responders globally. The platform is used by over 22,000+ first responder agencies in six countries and supports 171 million+ emergencies each year. Whether there’s an unsafe moment or an emergency, RapidSOS Ready devices, vehicles, homes, or buildings deliver essential data to the right place when it matters most. 
 
-A tempo pieno
+What this role is about:
+RapidSOS is revolutionizing emergency response by seamlessly connecting life-saving data from connected devices, apps, and sensors directly to 911, empowering first responders with critical real-time information to save lives faster and more effectively.
 
-  3 di 10 competenze corrispondenti
-Corrisponde alle tue preferenze per le offerte di lavoro: il tipo di offerta è {}.
+We are seeking an enthusiastic AI Senior Software Engineer with a focus on building high quality software to join our team. You will develop AI-driven solutions that enhance the efficiency and effectiveness of emergency call centers. Your work will directly impact call takers and other stakeholders in the Emergency response domain, making their jobs easier through the infusion of AI and data. If you're someone who isn't afraid to get hands-on with various technologies and loves solving complex problems using modern data and AI stacks, we'd love to hear from you!
 
-Candidatura semplice
+What you’ll do: 
 
-Salva
-Salva Softwarearchitekt - Steuerungsstationen für Simulation & Training (all gender)  presso ALTEN Germany
-Softwarearchitekt - Steuerungsstationen für Simulation & Training (all gender)
-ALTEN Germany · Manching, Baviera, Germania (In sede)
+Develop with AI: Build quality software. Identify best sources of intelligence for our applications, design for robustness and continuous improvement.
+Leverage data: RapidSOS has vast datasets of emergency calls and payloads from digital sensors to identify patterns and insights that can improve response times and outcomes. Fuse internal and external data (e.g. hurricane forecast) to provide optimal decision support to call takers. 
+Work across the stack: Leverage AI to build components outside your comfort zone.
+Collaboration: Work closely with cross-functional teams, including other software developers, data engineers, and emergency response professionals, to integrate AI solutions seamlessly into the RapidSOS platform.
+Innovation: Stay updated on the latest AI advancements and assess their applicability to our mission of enhancing public safety.
+What we’re looking for in our ideal candidate: 
 
-Candidatura semplice
-
-Salva
-Salva Softwarearchitekt - Steuerungsstationen für Simulation & Training (all gender)  presso ALTEN Germany
-Mostra altre opzioni
-Vedi un confronto con altri 78 candidati
-Accedi a informazioni esclusive sui candidati, scopri le offerte di lavoro per cui hai le maggiori probabilità di ricevere un riscontro, e tanto altro.
-
-Riattiva Premium
-Persone che puoi contattare
-Logo di Huawei
-Logo di Huawei
-Ex dipendenti di Huawei
-
-Mostra tutto
-Incontra il team di selezione
-Kerim Salković
-Kerim Salković  
- 3°
-Technischer Recruiter at ALTEN Germany with expertise in Sales and Customer Support
-Autore dell’offerta di lavoro
-
-Messaggio
-Informazioni sull’offerta di lavoro
-Die ALTEN Consulting Services GmbH bietet mit über 20 Jahren Branchenerfahrung ihren namhaften Kunden aus Industrie und Wirtschaft hochspezialisierte Engineering- und IT-Dienstleistungen zur gemeinsamen Realisierung von branchen- und technologieübergreifenden Lösungen an.
-
-
-Kompetenz, Engagement und Leidenschaft verbinden alle unsere Mitarbeiter der ALTEN Consulting Services GmbH. Dabei stehen ein partnerschaftliches Miteinander, ein starkes WIR-Gefühl, der persönliche Kontakt zu unseren Kunden und die Kreativität jedes Einzelnen stets im Fokus. Werde auch Du Teil unserer Erfolgsgeschichte.
-
-
-
-
-Softwarearchitekt - Steuerungsstationen für Simulation & Training (all gender)
-Standort: Manching
-Referenznummer: #504317
-
-
-
-
-Make it happen
-
-DU...
-
-entwickelst die Softwaregrundlagen für Steuerungsstationen in Simulations- und Trainingsumgebungen der militärischen Luftfahrt
-führst Anforderungsanalysen im engen Austausch mit Kunden und internen Fachabteilungen durch
-gestaltest moderne Benutzeroberflächen auf Basis von Qt/QML, zugeschnitten auf komplexe Trainingsumgebungen
-entwirfst und steuerst die technische Architektur der Applikationen – vom Systemaufbau über Schnittstellen bis zur Integrationsstrategie
-programmierst performanten, wartungsfreundlichen Code in C++ unter Berücksichtigung gängiger Softwareentwicklungsstandards
-bearbeitest eigenverantwortlich technische Herausforderungen und steuerst aktiv Lösungen zur Risikominimierung bei
-begleitest den gesamten Entwicklungsprozess inkl. Testing, Debugging und Fehlerbehebung
-arbeitest in agilen Projektstrukturen (Scrum, Kanban) mit und gestaltest tägliche Stand-ups, Sprint Reviews & Retros aktiv mit
-leitest und unterstützt Kollegen bei der Einarbeitung in Technologien und Architekturmuster
-
-
-
-
-Be our forward thinker
-
-DU...
-
-hast ein Studium im Bereich Informatik (mind. Master oder Diplom) erfolgreich abgeschlossen oder eine äquivalente Qualifikation
-verfügst über fundierte Erfahrung in der UI-nahen Softwareentwicklung und in der Gestaltung komplexer Systemarchitekturen
-bringst sehr gute Kenntnisse in C++,Qt/QML sowie im Entwurf benutzerfreundlicher Interfaces mit
-kennst dich mit modernen DevOps-Werkzeugen, Containertechnologien und agiler Softwareentwicklung aus
-bist routiniert im Umgang mit Versionskontrollsystemen (z. B. Git) und CI/CD-Umgebungen
-kommunizierst klar, lösungsorientiert und kannst auch komplexe Sachverhalte verständlich vermitteln
-übernimmst gerne Verantwortung für technische Entscheidungen und unterstützt Kolleg:innen bei der Weiterentwicklung
-sprichst Deutsch und Englisch verhandlugnssicher
-
-
-
-
-A home where people learn and thrive
-
-Zukunftsorientierter Arbeitsplatz mit unbefristetem Arbeitsvertrag
-Attraktive Vergütung
-Mobiles Arbeiten nach Absprache
-Individuelle interne und externe Weiterbildungen
-Flexible Arbeitszeitgestaltung mit Gleitzeitkontenregelung
-Persönlichen Ansprechpartner
+Educational Background: Bachelor's or Master's degree in Computer Science, Artificial Intelligence, Data Science, or a related field.
+Technical Proficiency: Strong programming skills in Python. Experience with leveraging modern LLMs. Production experience with LLMs, including debugging, performance management, continuous improvement. Proven experience in delivering projects end to end in collaboration with stakeholders. Ability to adapt and tackle a wide range of challenges, even in unfamiliar tech stacks.
+Ability to tackle multimodal data: We have structured/unstructured data, audio, video modalities all being produced in real-time.
+Familiarity with data warehouses: DataBricks preferred but we’re happy to bring a great candidate up to speed!
+Communication: Excellent verbal and written communication skills, with the ability to convey complex technical concepts to non-technical stakeholders. Self-starter with a proactive & creative approach to problem-solving and a strong sense of ownership.
+Travel & On-call: Ability and willingness to travel for internal team gatherings a few days per quarter. Ability and willingness to be on-call on a weekly rotational basis. 

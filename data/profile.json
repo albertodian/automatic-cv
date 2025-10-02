@@ -15,16 +15,16 @@
       "degree": "Double MSc in Robotics and Artificial Intelligence",
       "institution": "University of Trento & Aalto University",
       "location": "Trento, Italy & Espoo, Finland",
-      "year": "September 2023 - August 2025",
-      "description": "Specialized in Autonomous Systems, Machine Learning, and Computer Vision.",
+      "year": "Sep 2023 - Aug 2025",
+      "description": "Specialized in Autonomous Systems, Machine Learning and Computer Vision.",
       "grade": "Graduated with Honors"
     },
     {
       "degree": "BSc in Computer, Communications and Electronic Engineering",
       "institution": "University of Trento",
       "location": "Trento, Italy",
-      "year": "September 2020 - July 2023",
-      "description": "Focused on Software Engineering, Signal Processing, and Embedded Systems.",
+      "year": "Sep 2020 - Jul 2023",
+      "description": "Focused on Software Engineering, Signal Processing and Embedded Systems.",
       "grade": "104/110"
     }
   ],
@@ -33,7 +33,7 @@
       "title": "AI & Robotics Engineer Intern",
       "company": "Huawei Munich Research Center",
       "location": "Munich, Germany",
-      "years": "January 2025 - July 2025",
+      "years": "Jan 2025 - Jul 2025",
       "description": "Developed MSc thesis named 'Towards Connected Intelligence: Empowering Robotic Applications with Agentic AI Frameworks'",
       "descrition_list": [
         "SoTA Analysis regarding Visual Language Action models in robotics (Octo, OpenVLA, EdgeVLA, ECoT VLA, SmolVLA, Pi0) and 6G-Enabled Sensing.",
@@ -50,7 +50,7 @@
       "title": "AI Engineer Intern",
       "company": "Sarmap SA",
       "location": "Caslano, Switzerland",
-      "years": "April 2023 - June 2023",
+      "years": "Apr 2023 - Jun 2023",
       "description": "Development BSc thesis named 'Ternary classification of change in high-resolution SAR images using a convolutional neural network'",
       "descrition_list": [
         "Reviewed SAR change detection literature and CNN methods.",
@@ -68,7 +68,7 @@
       "title": "Peer Mentor",
       "company": "Italy Expo 2020",
       "location": "Dubai, United Arab Emirates",
-      "years": "October 2020 - June 2022",
+      "years": "Oct 2020 - Jun 2022",
       "description": "Peer Mentor for cultural and educational activities at the Italy Pavilion, Expo 2020 Dubai (online).",
       "descrition_list": [
         "Managed 30+ partcipants during an international hackathon.",
@@ -84,7 +84,7 @@
       "role": "Developer and AI Engineer",
       "year": "2025",
       "description": "Developed a system to modify your CV based on a job description using LLMs to maximise the match between your profile and the job requirements. It renders the result into a clean, ATS-friendly PDF using LaTeX templates.",
-      "skills": ["Ollama", "Python", "LaTeX", "Git", "Playwright", "RestAPI", "UI/UX Design", "Streamlit", "Web Scraping"],
+      "skills": ["Ollama", "Python", "LaTeX", "Git", "Playwright", "RestAPI", "UI/UX Design", "Streamlit", "Web Scraping", "Weasyprint"],
       "url": "https://github.com/albertodian/automatic-cv"
     },
     {   

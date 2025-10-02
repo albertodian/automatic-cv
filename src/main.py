@@ -35,24 +35,23 @@ def main():
         else:
             job_text = ""
         
-    job_info = extract_relevant_job_info(job_text, model_name=args.model)
+    job_info = extract_relevant_job_info(job_text, "openai/gpt-4.1-mini")
     
-    # job_info_path = os.path.join("output/temp", "job_info.json")
-    # with open(job_info_path, "w") as f:
-    #     json.dump(job_info, f, indent=2)
-    # print(f"Saved job info to {job_info_path}")
+    job_info_path = os.path.join("output/temp", "job_info.json")
+    with open(job_info_path, "w") as f:
+        json.dump(job_info, f, indent=2)
+    print(f"Saved job info to {job_info_path}")
 
     # Generate optimized CV profile
     print("Generating optimized CV profile...")
-    optimized_profile_json, text_explanation = generate_optimized_profile(profile, job_info, model_name=args.model)
+    optimized_profile_json = generate_optimized_profile(profile, job_info, "openai/gpt-4.1-mini")
     
-    # optimized_profile_path = os.path.join("output", "optimized_profile.json")
-    # with open(optimized_profile_path, "w") as f:
-    #     json.dump(optimized_profile_json, f, indent=2)
-    # print(f"Saved optimized profile to {optimized_profile_path}")
+    optimized_profile_path = os.path.join("output/temp", "optimized_profile.json")
+    with open(optimized_profile_path, "w") as f:
+        json.dump(optimized_profile_json, f, indent=2)
+    print(f"Saved optimized profile to {optimized_profile_path}")
     
     render_cv_pdf_html(optimized_profile_json)
-    print(text_explanation)
 
     # Generate cover letter if requested
     if args.cover:
