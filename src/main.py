@@ -1,7 +1,7 @@
 import argparse
 from data_loader import load_profile
 from job_parser import fetch_job_description
-from llm_agent import generate_optimized_profile, generate_cover_letter, extract_relevant_job_info
+from llm_agent import generate_optimized_profile, generate_cover_letter, extract_relevant_job_info, extract_cv_from_pdf_smart, save_cv_to_json
 from renderer import render_cv_pdf_html, render_cover_letter_pdf
 import os
 import json
@@ -9,13 +9,20 @@ import json
 def main():
     parser = argparse.ArgumentParser(description="Generate a customized CV (and optional cover letter)")
     parser.add_argument("--url", help="URL of the job posting")
+    parser.add_argument("--resume", action="store_true", help="Extract CV data from existing PDF resume")
     parser.add_argument("--model", default="llama3.1:8b", help="Ollama model name")
     parser.add_argument("--cover", action="store_true", help="Also generate cover letter")
     args = parser.parse_args()
 
+    if args.resume:
+        cv_data = extract_cv_from_pdf_smart("data/AUS_DianAlberto.pdf", "openai/gpt-4.1-mini")
+        save_cv_to_json(cv_data, "data/profile_fetched.json")
+        print("Extracted CV data from resume and saved to data/profile_fetched.json")
+    
+
     # Load candidate profile
     print("Loading candidate profile...")
-    profile = load_profile("data/profile.json")
+    profile = load_profile("data/profile_fetched.json")
 
     # Fetch and parse job description
     print("Fetching job description...")

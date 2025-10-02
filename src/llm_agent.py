@@ -1,8 +1,12 @@
 import json
-import ollama
 import re
 import os
 import replicate
+import PyPDF2
+import pdfplumber
+import fitz
+import pytesseract
+from pdf2image import convert_from_path
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -31,12 +35,41 @@ CRITICAL PAGE LIMIT RULE:
 
 OPTIMIZATION STRATEGY:
 
-1. CONTENT SELECTION (DO THIS FIRST):
-   - Analyze which experiences/projects are most relevant to the job posting
-   - REMOVE entire experiences/projects that are not relevant
-   - For a typical job: keep 2 most relevant experiences, 3-4 most relevant projects
-   - Shorten descrition_list arrays: keep only the 3-4 most impactful bullets per experience
-   - Education: Keep ALL entries unchanged - do not remove or shorten
+1. CONTENT SELECTION - SYSTEMATIC RELEVANCE SCORING (DO THIS FIRST):
+   
+   A. EXPERIENCE RELEVANCE SCORING:
+   For each experience, assign a relevance score (0-10) based on:
+   - Technical alignment: Does it use similar technologies/skills as the job? (0-4 points)
+   - Domain alignment: Is it in a similar field/industry? (0-3 points)
+   - Recency: How recent is it? (0-2 points: 2024-2025=2pts, 2022-2023=1pt, before 2022=0pts)
+   - Seniority/Impact: Does the role level match the job posting? (0-1 point)
+   
+   Scoring examples:
+   - AI Engineer at tech company using ML/Python for recent work = 9-10 points (KEEP)
+   - Software intern at related company 2 years ago = 5-6 points (MAYBE)
+   - Non-technical mentor role from 2020 = 1-3 points (REMOVE)
+   
+   RULE: Keep the top 2-3 experiences with highest scores. Always prefer recent (2023+) technical roles.
+   
+   B. PROJECT RELEVANCE SCORING:
+   For each project, assign a relevance score (0-10) based on:
+   - Technology overlap: Does it use tools/frameworks mentioned in job posting? (0-5 points)
+   - Problem domain: Does it solve similar problems as the job? (0-3 points)
+   - Complexity/Impact: Is it a substantial, impressive project? (0-2 points)
+   
+   Scoring examples:
+   - ML project using same stack as job posting = 9-10 points (KEEP)
+   - Web app with some relevant tech = 5-6 points (MAYBE)
+   - Unrelated creative/design project = 2-4 points (REMOVE)
+   
+   RULE: Keep the top 3-4 projects with highest scores. Prioritize technical projects over creative ones unless creativity is in job posting.
+   
+   C. SELECTION LOGIC:
+   - Score ALL experiences and projects systematically
+   - Sort by score (highest first)
+   - Keep top 2-3 experiences (minimum 2, maximum 3)
+   - Keep top 3-4 projects (minimum 3, maximum 4)
+   - Document your reasoning mentally: "Keeping X because [technical alignment + recency], removing Y because [low relevance + old]"
 
 2. KEYWORD IDENTIFICATION:
    - Extract 10-15 critical technical keywords from the job posting
@@ -53,23 +86,29 @@ OPTIMIZATION STRATEGY:
    - The final skills array should feel comprehensive and impressive
 
 4. EXPERIENCE SECTION - STRATEGIC ENHANCEMENT:
-   - Keep only 2-3 most relevant experiences (REMOVE others completely)
+   - Keep only 2-3 most relevant experiences based on scoring (REMOVE others completely)
    - For kept experiences, limit to 3-4 bullets in descrition_list
    - Enhance 2-3 bullets per experience with keywords naturally integrated
    - Update skills arrays with 2-4 new keywords MIXED throughout (not at end)
    - Example bullet enhancement: "Collected ~2000 robot trajectories using cloud storage (AWS S3) and designed dataset for model finetuning with MLOps pipeline"
 
 5. PROJECTS SECTION - SELECTIVE INCLUSION:
-   - Keep only 3-4 most relevant projects (REMOVE others completely)
+   - Keep only 3-4 most relevant projects based on scoring (REMOVE others completely)
    - Enhance 2 projects: improve descriptions with 2-3 keywords
    - Update skills arrays: add 2-4 keywords MIXED in (not appended at end)
    - Keep other projects minimal/unchanged
 
-6. SUMMARY - CONCISE AND POWERFUL:
+6. SUMMARY - HONEST CAPABILITIES AND POTENTIAL:
    - Maximum 2 sentences (not 3-4!)
    - Include 3-4 most critical keywords from job posting
    - Should be punchy and direct
-   - Example: "AI Engineer specializing in machine learning deployment and cloud infrastructure (AWS). Experienced in building production-ready models with MLOps practices and cross-functional collaboration."
+   - ⚠️ CRITICAL HONESTY RULE: Focus on skills, capabilities, and what the candidate CAN do, NOT false claims of experience
+   - Use language like: "specializing in", "skilled in", "passionate about", "focused on", "capabilities in"
+   - AVOID: "experienced in X" unless they actually have that experience documented in their CV
+   - AVOID: Claiming specific domain experience they don't have (e.g., don't say "experienced in healthcare AI" if they've never worked in healthcare)
+   - Good example: "AI Engineer specializing in machine learning and computer vision with strong capabilities in cloud deployment and MLOps pipelines."
+   - Bad example: "AI Engineer with 5 years experience in production ML systems and enterprise cloud architecture" (if they don't have this)
+   - Show how their ACTUAL skills align with the job requirements, not invented experience
 
 7. KEYWORD PLACEMENT STRATEGY:
    - Each keyword appears 2-3 times across ENTIRE CV:
@@ -80,12 +119,12 @@ OPTIMIZATION STRATEGY:
    - Include related terms: If job mentions "cloud", add both "AWS" and "Cloud Computing"
    - Never cluster all new keywords together
 
-8. WHAT TO REMOVE (PRIORITIZE THIS):
-   - Remove least relevant experience(s) completely
-   - Remove least relevant project(s) completely
-   - Within kept experiences: remove weakest bullets, keep max 3-4
-   - Older experiences (2020-2022) are often good candidates for removal unless directly relevant
-   - ⚠️ DO NOT remove any education entries
+8. SELECTION CONSISTENCY RULES:
+   - ALWAYS keep the most recent technical experience (even if relevance score is moderate)
+   - ALWAYS prefer experiences/projects that demonstrate hands-on technical work over mentoring/leadership roles (unless job is leadership)
+   - If two items have similar scores, keep the more recent one
+   - If candidate has limited experience (only 2-3 total), keep all experiences even if one is less relevant
+   - Be consistent: If you keep a certain type of project for one candidate, keep similar projects for other candidates with similar job postings
 
 9. SKILLS ARRAY RICHNESS:
    - Target: 30-40 total skills in final array
@@ -102,16 +141,27 @@ Candidate Profile:
 Job Posting:
 {json.dumps(job_info, indent=2, ensure_ascii=False)}
 
+STEP-BY-STEP PROCESS (Follow this order):
+Step 1: Score each experience (0-10) based on technical alignment, domain alignment, recency, seniority
+Step 2: Score each project (0-10) based on technology overlap, problem domain, complexity
+Step 3: Select top 2-3 experiences and top 3-4 projects to keep
+Step 4: For kept items, identify which bullets to keep (3-4 per experience)
+Step 5: Identify 8-12 keywords from job posting to add
+Step 6: Enhance kept experiences/projects with keywords
+Step 7: Update skills array (30-40 items, mixed placement)
+Step 8: Write honest, capability-focused summary
+
 OPTIMIZATION CHECKLIST:
-1. ✓ Remove content to fit one page (max 2-3 experiences, 3-4 projects)
-2. ✓ Keep ALL education entries unchanged
-3. ✓ Summary is exactly 2 sentences with 3-4 keywords
-4. ✓ Add 8-12 keywords to main skills array MIXED throughout
-5. ✓ Main skills array has 30-40 items total (rich and comprehensive)
-6. ✓ Enhance 4-6 bullets across kept experiences
-7. ✓ Enhance 2 project descriptions
-8. ✓ All new keywords are MIXED into lists, not appended at end
-9. ✓ Each keyword appears 2-3 times total across CV
+1. ✓ Systematically score all experiences and projects
+2. ✓ Remove content to fit one page (keep top 2-3 experiences, top 3-4 projects based on scores)
+3. ✓ Keep ALL education entries unchanged
+4. ✓ Summary is exactly 2 sentences focusing on capabilities, NOT false experience claims
+5. ✓ Add 8-12 keywords to main skills array MIXED throughout
+6. ✓ Main skills array has 30-40 items total (rich and comprehensive)
+7. ✓ Enhance 4-6 bullets across kept experiences
+8. ✓ Enhance 2 project descriptions
+9. ✓ All new keywords are MIXED into lists, not appended at end
+10. ✓ Each keyword appears 2-3 times total across CV
 
 OUTPUT REQUIREMENTS:
 Return ONLY valid JSON, no markdown, no commentary.
@@ -127,7 +177,7 @@ Return ONLY valid JSON, no markdown, no commentary.
     "github": "string",
     "languages": ["array"]
   }},
-  "summary": "EXACTLY 2 sentences. Must include 3-4 keywords naturally. Be concise and punchy.",
+  "summary": "EXACTLY 2 sentences. Include 3-4 keywords naturally. Focus on CAPABILITIES and SKILLS, not false experience. Use: 'specializing in', 'skilled in', 'passionate about', 'capabilities in'. AVOID: 'experienced in X' unless proven in CV.",
   "education": [
     {{
       "degree": "string",
@@ -139,6 +189,7 @@ Return ONLY valid JSON, no markdown, no commentary.
     }}
   ],
   "experience": [
+    "KEEP ONLY TOP 2-3 BASED ON RELEVANCE SCORING - Must be most recent and technically aligned",
     {{
       "title": "string",
       "company": "string",
@@ -148,7 +199,7 @@ Return ONLY valid JSON, no markdown, no commentary.
       "descrition_list": [
         "MAX 3-4 bullets per experience",
         "Enhance 2-3 bullets with keywords naturally",
-        "Remove less impactful bullets"
+        "Keep most impactful bullets based on relevance"
       ],
       "skills": ["Mix", "new", "keywords", "AWS", "throughout", "not", "at", "end"],
       "reference": "string (if exists)",
@@ -156,6 +207,7 @@ Return ONLY valid JSON, no markdown, no commentary.
     }}
   ],
   "projects": [
+    "KEEP ONLY TOP 3-4 BASED ON RELEVANCE SCORING - Must have technology overlap with job",
     {{
       "name": "string",
       "role": "string",
@@ -166,7 +218,7 @@ Return ONLY valid JSON, no markdown, no commentary.
     }}
   ],
   "skills": [
-    "TARGET: 15-20 items total - make it rich and comprehensive",
+    "TARGET: 30-40 items total - make it rich and comprehensive",
     "Python",
     "C++",
     "AWS",
@@ -187,12 +239,14 @@ Return ONLY valid JSON, no markdown, no commentary.
 }}
 
 REMEMBER: 
-- ONE PAGE is non-negotiable - be ruthless about removing experiences/projects
+- Use systematic scoring (0-10) for consistent selection decisions
+- ONE PAGE is non-negotiable - be ruthless about removing low-scoring experiences/projects
 - NEVER remove education entries
+- Always prefer recent (2023+) technical work over older/non-technical work
 - Mix keywords naturally throughout all arrays
-- Summary must be exactly 2 sentences
+- Summary must be exactly 2 sentences focusing on CAPABILITIES not false claims
 - Skills array should be rich (30-40 items)
-- Prioritize quality over quantity
+- Prioritize quality, honesty, and consistency
 
 BEGIN OPTIMIZATION:
 """
@@ -329,3 +383,250 @@ Rules:
 
     return parsed
 
+
+def extract_cv_from_pdf_smart(pdf_path: str, model_name: str) -> dict:
+    """
+    Smart CV extraction from PDF: tries fast methods first, falls back to OCR if needed.
+    
+    Args:
+        pdf_path: Path to the PDF file
+        model_name: Replicate model name to use for extraction
+    
+    Returns:
+        dict: Structured CV data matching the required JSON format
+    """
+    
+    def read_pdf_smart(file_path: str) -> str:
+        """
+        Try multiple extraction methods in order of speed/reliability.
+        """
+        text = ""
+        
+        # Method 1: Try pdfplumber (fast, works for 80% of CVs)
+        try:
+
+            print("Attempting extraction with pdfplumber...")
+            with pdfplumber.open(file_path) as pdf:
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text + "\n"
+            
+            if text.strip():
+                print("✓ Successfully extracted text directly from PDF")
+                return text
+            else:
+                print("✗ pdfplumber found no text")
+        except ImportError:
+            print("✗ pdfplumber not installed, trying next method...")
+        except Exception as e:
+            print(f"✗ pdfplumber failed: {e}")
+        
+        # Method 2: Try PyMuPDF (fitz)
+        try:
+
+            print("Attempting extraction with PyMuPDF...")
+            doc = fitz.open(file_path)
+            for page in doc:
+                text += page.get_text() + "\n"
+            doc.close()
+            
+            if text.strip():
+                print("✓ Successfully extracted text using PyMuPDF")
+                return text
+            else:
+                print("✗ PyMuPDF found no text")
+        except ImportError:
+            print("✗ PyMuPDF not installed, trying next method...")
+        except Exception as e:
+            print(f"✗ PyMuPDF failed: {e}")
+        
+        # Method 3: Try PyPDF2 (basic fallback)
+        try:
+
+            print("Attempting extraction with PyPDF2...")
+            with open(file_path, 'rb') as file:
+                pdf_reader = PyPDF2.PdfReader(file)
+                for page in pdf_reader.pages:
+                    text += page.extract_text() + "\n"
+            
+            if text.strip():
+                print("✓ Successfully extracted text using PyPDF2")
+                return text
+            else:
+                print("✗ PyPDF2 found no text")
+        except ImportError:
+            print("✗ PyPDF2 not installed, trying OCR...")
+        except Exception as e:
+            print(f"✗ PyPDF2 failed: {e}")
+        
+        # Method 4: Fallback to OCR (slow but works on scanned PDFs)
+        print("⚠ No text extraction worked, attempting OCR (this may take a minute)...")
+        try:
+
+            
+            images = convert_from_path(file_path, dpi=300)
+            for i, image in enumerate(images):
+                print(f"  OCR processing page {i+1}/{len(images)}...")
+                page_text = pytesseract.image_to_string(image, lang='eng')
+                text += page_text + "\n"
+            
+            if text.strip():
+                print("✓ Successfully extracted text using OCR")
+                return text
+            else:
+                print("✗ OCR found no text")
+        except ImportError:
+            print("✗ OCR libraries not installed. Install pytesseract and pdf2image for scanned PDF support.")
+        except Exception as e:
+            print(f"✗ OCR failed: {e}")
+            print("Note: OCR requires Tesseract to be installed on your system.")
+        
+        raise ValueError(
+            "Could not extract any text from PDF using any method. "
+            "The PDF might be empty, corrupted, or require OCR (install pytesseract and Tesseract)."
+        )
+    
+    # Extract text from PDF
+    cv_text = read_pdf_smart(pdf_path)
+    
+    if not cv_text.strip():
+        raise ValueError("Extracted text is empty.")
+    
+    print(f"\nExtracted {len(cv_text)} characters from PDF")
+    print("Sending to LLM for structured extraction...\n")
+    
+    # Create extraction prompt
+    prompt = f"""
+You are an expert CV parser. Extract ALL information from the provided CV text and structure it into a specific JSON format.
+
+CRITICAL INSTRUCTIONS:
+1. Extract ALL information accurately - do not skip or summarize
+2. Maintain exact dates, names, and details as written
+3. If information is missing, use empty strings "" or empty arrays []
+4. Do NOT invent or assume information that isn't in the CV
+5. Return ONLY valid JSON, no markdown, no commentary
+
+CV TEXT TO PARSE:
+{cv_text}
+
+REQUIRED JSON STRUCTURE (match this exactly):
+{{
+  "personal_info": {{
+    "name": "Full name from CV",
+    "email": "email address",
+    "phone": "phone number",
+    "nationality": "nationality if mentioned, otherwise empty string",
+    "age": age_as_number_if_mentioned_otherwise_0,
+    "linkedin": "LinkedIn URL if present",
+    "github": "GitHub URL if present",
+    "languages": ["array of languages with proficiency levels"]
+  }},
+  "summary": "Professional summary or objective statement - keep it as written in CV",
+  "education": [
+    {{
+      "degree": "Full degree name",
+      "institution": "University/School name",
+      "location": "City, Country",
+      "year": "Date range (e.g., 'Sep 2020 - Jul 2023')",
+      "description": "Additional details about specialization, coursework, etc.",
+      "grade": "GPA or grade if mentioned"
+    }}
+  ],
+  "experience": [
+    {{
+      "title": "Job title",
+      "company": "Company name",
+      "location": "City, Country",
+      "years": "Date range (e.g., 'Jan 2025 - Jul 2025')",
+      "description": "Brief one-line description of role or thesis if mentioned",
+      "descrition_list": [
+        "First responsibility/achievement bullet point",
+        "Second responsibility/achievement bullet point",
+        "Continue for all bullet points listed"
+      ],
+      "skills": ["array", "of", "technologies", "and", "skills", "used"],
+      "reference": "Reference person name if mentioned, otherwise empty string",
+      "reference_letter_url": "URL if provided, otherwise empty string"
+    }}
+  ],
+  "projects": [
+    {{
+      "name": "Project name",
+      "role": "Your role in the project",
+      "year": "Year (e.g., '2024')",
+      "description": "Project description as written",
+      "skills": ["technologies", "used", "in", "project"],
+      "url": "Project URL/GitHub link if provided"
+    }}
+  ],
+  "skills": [
+    "Extract all skills mentioned anywhere in CV",
+    "Include programming languages, frameworks, tools, methodologies",
+    "Keep as individual items in array"
+  ]
+}}
+
+EXTRACTION RULES:
+- For experience descrition_list: Extract each bullet point as a separate array item
+- For skills arrays: Extract technologies mentioned in that specific experience/project
+- For main skills array: Compile ALL technical skills mentioned throughout the CV
+- Dates: Keep in original format from CV
+- If CV has sections not matching this structure, map them to the closest equivalent
+- If age is not explicitly stated, set to 0
+- Preserve all URLs exactly as they appear
+- Note: "descrition_list" spelling is intentional (keep the typo)
+
+IMPORTANT: Return ONLY the JSON object. No explanation, no markdown formatting, no ```json``` tags.
+
+BEGIN EXTRACTION:
+"""
+
+    # Call LLM for extraction
+    print("Calling LLM for extraction...")
+    output = replicate.run(
+        model_name,
+        input={"prompt": prompt}
+    )
+    
+    content = "".join([str(x) for x in output]).strip()
+    
+    # Clean up potential markdown formatting
+    if content.startswith("```json"):
+        content = content.split("```json")[1]
+    if content.startswith("```"):
+        content = content.split("```")[1]
+    if content.endswith("```"):
+        content = content.rsplit("```", 1)[0]
+    content = content.strip()
+    
+    # Parse JSON
+    try:
+        cv_data = json.loads(content)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"LLM did not return valid JSON. Error: {str(e)}\n\nReceived content:\n{content[:500]}...")
+    
+    # Validate required fields
+    required_fields = ["personal_info", "summary", "education", "experience", "projects", "skills"]
+    for field in required_fields:
+        if field not in cv_data:
+            raise ValueError(f"Missing required field in extracted data: {field}")
+    
+    print("✓ Successfully extracted and structured CV data\n")
+    return cv_data
+
+
+def save_cv_to_json(cv_data: dict, output_path: str) -> None:
+    """
+    Save CV data to a JSON file.
+    
+    Args:
+        cv_data: Dictionary containing CV data
+        output_path: Path where JSON file should be saved
+    """
+    try:
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(cv_data, f, indent=2, ensure_ascii=False)
+        print(f"✓ CV data successfully saved to {output_path}")
+    except Exception as e:
+        raise ValueError(f"Error saving JSON file: {str(e)}")

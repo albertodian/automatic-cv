@@ -9,7 +9,7 @@
     "github": "https://github.com/albertodian",
     "languages": ["Italian (native)", "English (C1)", "Spanish (B1), German (A1)"]
   },
-  "summary": "Robotics and AI engineer passionate about building intelligent systems.",
+  "summary": "Robotics and AI Engineer passionate about building intelligent systems.",
   "education": [
     {
       "degree": "Double MSc in Robotics and Artificial Intelligence",
@@ -123,6 +123,6 @@
   "skills": [
     "Python", "C++", "C#", "Dart", "Flutter", "TensorFlow", "Keras", "PyTorch", "OpenCV", "ROS", "ROS#", "Unity", "MetaSDK",
     "Ollama", "LangChain", "AutoGen", "Git", "LaTeX", "Figma", "Adobe Creative Suite", "UI/UX Design",
-    "Robotics", "Machine Learning", "Computer Vision", "Image Processing", "3D Modeling"
+    "Robotics", "Machine Learning", "Computer Vision", "Image Processing", "3D Modeling", "MLOps"
   ]
 }

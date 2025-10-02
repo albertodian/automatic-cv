@@ -1,0 +1,1 @@
+# Script to define RestAPI endpoints for the CV application using FastAPI.
