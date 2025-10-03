@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ personal_info.name }} - CV</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 0.8cm;
+    }
+
+    body {
+      font-family: "Segoe UI", "Helvetica Neue", "Arial", sans-serif;
+      line-height: 1.2;
+      font-size: 8.5pt;
+      color: #333333;
+      background: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      font-size: 20pt;
+      color: #2563eb;
+      margin: 0;
+      font-weight: 300;
+      letter-spacing: -0.5px;
+    }
+
+    h2 {
+      font-size: 9pt;
+      color: #1e40af;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      margin: 0.6em 0 0.3em 0;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 0.2em;
+    }
+
+    p {
+      font-size: 8pt;
+      margin: 0.2em 0;
+      color: #374151;
+      line-height: 1.3;
+    }
+
+    .header {
+      margin-bottom: 0.8em;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5em;
+    }
+
+    .contact-compact {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8em;
+      font-size: 7.5pt;
+      color: #6b7280;
+    }
+
+    .contact-item {
+      display: inline;
+    }
+
+    /* Single column layout */
+    .content {
+      margin-top: 0.5em;
+    }
+
+    .left-column, .right-column {
+      min-height: 0;
+    }
+
+    /* Remove bullets for main section lists */
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Description bullets for nested lists */
+    ul ul {
+      list-style: disc;
+      margin-left: 1.5em;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+    }
+
+    ul ul li {
+      font-size: 7.5pt;
+      color: #4b5563;
+      margin-bottom: 0.2em;
+      line-height: 1.2;
+    }
+
+    li {
+      margin-bottom: 0.4em;
+    }
+
+    .entry {
+      position: relative;
+      padding: 0.3em 0 0.3em 12px;
+      border-left: 2px solid #f3f4f6;
+      margin-left: 6px;
+      margin-bottom: 0.5em;
+    }
+
+    .entry:before {
+      content: '';
+      position: absolute;
+      left: -4px;
+      top: 0.6em;
+      width: 6px;
+      height: 6px;
+      background: #3b82f6;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+    }
+
+    .entry:last-child {
+      border-left-color: transparent;
+    }
+
+    .entry-title {
+      font-weight: 700;
+      font-size: 8.5pt;
+      color: #1f2937;
+      display: inline;
+    }
+
+    .entry-company {
+      font-size: 7.5pt;
+      color: #3b82f6;
+      font-weight: 600;
+      display: inline;
+      margin: 0 0.5em;
+    }
+
+    .entry-meta {
+      font-size: 7pt;
+      color: #6b7280;
+      display: inline;
+      float: right;
+    }
+
+    .entry-header {
+      margin-bottom: 0.2em;
+      overflow: hidden;
+    }
+
+    .entry-description {
+      font-size: 7.5pt;
+      color: #4b5563;
+      margin-bottom: 0.2em;
+      line-height: 1.2;
+    }
+
+    .skills-inline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      margin-top: 0.2em;
+    }
+
+    .skill-tag {
+      display: inline-block;
+      background: #eff6ff;
+      color: #1e40af;
+      padding: 1px 5px;
+      border-radius: 8px;
+      font-size: 6.5pt;
+      margin: 1px 2px 1px 0;
+      border: 1px solid #dbeafe;
+      font-weight: 500;
+    }
+
+    .skill-tag:nth-child(3n+1) {
+      background: #fef3c7;
+      color: #92400e;
+      border-color: #fde68a;
+    }
+
+    .skill-tag:nth-child(3n+2) {
+      background: #ecfdf5;
+      color: #065f46;
+      border-color: #a7f3d0;
+    }
+
+    a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .summary-box {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      padding: 0.5em;
+      border-radius: 6px;
+      border-left: 3px solid #3b82f6;
+      margin-bottom: 0.8em;
+      font-size: 8pt;
+      line-height: 1.3;
+    }
+
+    .section-compact {
+      margin-bottom: 0.8em;
+    }
+
+    .skills-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      margin-top: 0.3em;
+    }
+
+    .skill-main {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 6.5pt;
+      font-weight: 500;
+      color: #374151;
+    }
+
+    .reference-section {
+      font-size: 7pt;
+      color: #6b7280;
+      margin-top: 0.2em;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: #f9fafb;
+      padding: 0.2em 0.4em;
+      border-radius: 4px;
+      border-left: 2px solid #3b82f6;
+    }
+
+    .project-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 0.2em;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Compact Header -->
+  <div class="header">
+    <div>
+      <h1>{{ personal_info.name }}</h1>
+      <div class="contact-compact">
+        <div class="contact-item">
+          <a href="mailto:{{ personal_info.email }}">{{ personal_info.email }}</a>
+        </div>
+        <div class="contact-item">
+          {{ personal_info.phone }}
+        </div>
+        {% if personal_info.linkedin %}
+        <div class="contact-item">
+          <a href="{{ personal_info.linkedin }}">LinkedIn</a>
+        </div>
+        {% endif %}
+        {% if personal_info.github %}
+        <div class="contact-item">
+          <a href="{{ personal_info.github }}">GitHub</a>
+        </div>
+        {% endif %}
+        {% if personal_info.languages %}
+        <div class="contact-item">
+          Languages: {% for lang in personal_info.languages %}{{ lang }}{% if not loop.last %}, {% endif %}{% endfor %}
+        </div>
+        {% endif %}
+        {% if personal_info.nationality or personal_info.age %}
+        <div class="contact-item">
+          {% if personal_info.nationality %}{{ personal_info.nationality }}{% endif %}{% if personal_info.age and personal_info.nationality %}, {{ personal_info.age }} years{% elif personal_info.age %}{{ personal_info.age }} years{% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-box">{{ summary }}</div>
+
+  <!-- Experience -->
+  <div class="section-compact">
+    <h2>Experience</h2>
+    {% for exp in experience %}
+      <div class="entry">
+        <div class="entry-header">
+          <div class="entry-title">{{ exp.title }}</div>
+          <div class="entry-company">{{ exp.company }}</div>
+          <div class="entry-meta">{{ exp.years }}{% if exp.location %} • {{ exp.location }}{% endif %}</div>
+        </div>
+        {% if exp.description %}<div class="entry-description">{{ exp.description }}</div>{% endif %}
+        {% if exp.descrition_list %}
+          <ul>
+          {% for d in exp.descrition_list %}
+            <li>{{ d }}</li>
+          {% endfor %}
+          </ul>
+        {% endif %}
+        {% if exp.skills %}
+          <div class="skills-inline">
+            {% for s in exp.skills %}
+              <span class="skill-tag">{{ s }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
+        {% if exp.reference %}
+        <div class="reference-section">
+          <strong>Ref:</strong> {{ exp.reference }}
+          {% if exp.reference_letter_url %}
+          <a href="{{ exp.reference_letter_url }}" title="Reference Letter">
+            <svg width="8" height="8" viewBox="0 0 24 24" style="fill:#2563eb; vertical-align: middle;">
+              <path d="M7.896,16.104c-.586-.585-.586-1.536,0-2.121,.586-.586,1.535-.586,2.121,0,1.326,1.326,3.64,1.327,4.966,0l4.989-4.989c1.369-1.369,1.369-3.597,0-4.966s-3.597-1.369-4.966,0c-.586,.586-1.535,.586-2.121,0-.586-.585-.586-1.536,0-2.121,2.538-2.539,6.67-2.539,9.208,0,2.539,2.539,2.539,6.669,0,9.208l-4.989,4.989c-1.27,1.27-2.937,1.904-4.604,1.904s-3.335-.635-4.604-1.904Zm-1.384,7.893c1.667,0,3.334-.635,4.604-1.904,.586-.585,.586-1.536,0-2.121-.586-.586-1.535-.586-2.121,0-1.37,1.37-3.598,1.369-4.966,0-1.369-1.369-1.369-3.597,0-4.966l4.961-4.961c1.37-1.37,3.598-1.37,4.966,0,.586,.586,1.535,.586,2.121,0,.586-.585,.586-1.536,0-2.121-2.539-2.539-6.669-2.539-9.208,0L1.907,12.885c-2.539,2.539-2.539,6.669,0,9.208,1.27,1.27,2.937,1.904,4.604,1.904Z"/>
+            </svg>
+          </a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Education -->
+  <div class="section-compact">
+    <h2>Education</h2>
+    {% for edu in education %}
+      <div class="entry">
+        <div class="entry-header">
+          <div class="entry-title">{{ edu.degree }}</div>
+          <div class="entry-company">{{ edu.institution }}</div>
+          <div class="entry-meta">{{ edu.year }}{% if edu.location %} • {{ edu.location }}{% endif %}</div>
+        </div>
+        {% if edu.description %}<div class="entry-description">{{ edu.description }}</div>{% endif %}
+        {% if edu.grade %}<div class="entry-description"><strong>Grade:</strong> {{ edu.grade }}</div>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Projects -->
+  <div class="section-compact">
+    <h2>Key Projects</h2>
+    {% for project in projects %}
+      <div class="entry">
+        <div class="entry-header">
+          <div class="entry-title">
+            {% if project.url %}
+              <a href="{{ project.url }}" target="_blank">
+                <svg width="10" height="10" viewBox="0 0 24 24" style="fill:#2563eb; vertical-align: middle; margin-right: 4px;">
+                  <path d="M7.896,16.104c-.586-.585-.586-1.536,0-2.121,.586-.586,1.535-.586,2.121,0,1.326,1.326,3.64,1.327,4.966,0l4.989-4.989c1.369-1.369,1.369-3.597,0-4.966s-3.597-1.369-4.966,0c-.586,.586-1.535,.586-2.121,0-.586-.585-.586-1.536,0-2.121,2.538-2.539,6.67-2.539,9.208,0,2.539,2.539,2.539,6.669,0,9.208l-4.989,4.989c-1.27,1.27-2.937,1.904-4.604,1.904s-3.335-.635-4.604-1.904Zm-1.384,7.893c1.667,0,3.334-.635,4.604-1.904,.586-.585,.586-1.536,0-2.121-.586-.586-1.535-.586-2.121,0-1.37,1.37-3.598,1.369-4.966,0-1.369-1.369-1.369-3.597,0-4.966l4.961-4.961c1.37-1.37,3.598-1.37,4.966,0,.586,.586,1.535,.586,2.121,0,.586-.585,.586-1.536,0-2.121-2.539-2.539-6.669-2.539-9.208,0L1.907,12.885c-2.539,2.539-2.539,6.669,0,9.208,1.27,1.27,2.937,1.904,4.604,1.904Z"/>
+                </svg>{{ project.name }}
+              </a>
+            {% else %}
+              {{ project.name }}
+            {% endif %}
+          </div>
+          <div class="entry-meta">{% if project.role %}{{ project.role }} • {% endif %}{{ project.year }}</div>
+        </div>
+        <div class="entry-description">{{ project.description }}</div>
+        {% if project.skills %}
+          <div class="skills-inline">
+            {% for s in project.skills %}
+              <span class="skill-tag">{{ s }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Skills -->
+  <div class="section-compact">
+    <h2>Core Skills</h2>
+    <div class="skills-grid">
+      {% for s in skills %}
+        <div class="skill-main">{{ s }}</div>
+      {% endfor %}
+    </div>
+  </div>
+
+</body>
+</html>

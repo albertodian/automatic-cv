@@ -8,6 +8,7 @@ import fitz
 import pytesseract
 from pdf2image import convert_from_path
 from dotenv import load_dotenv
+from typing import Dict, Any, Tuple, List
 
 load_dotenv()
 api_token = os.getenv("REPLICATE_API_TOKEN")
@@ -15,7 +16,290 @@ api_token = os.getenv("REPLICATE_API_TOKEN")
 if not api_token:
     raise ValueError("REPLICATE_API_TOKEN is not set in environment variables.")
 
+def generate_optimized_profile_with_validation(
+    profile: dict, 
+    job_info: dict, 
+    model_name: str,
+    max_retries: int = 2
+) -> dict:
+    """
+    Generate and validate optimized CV with automatic corrections.
+    
+    Args:
+        profile: Original CV data
+        job_info: Job posting information
+        model_name: Replicate model name
+        max_retries: Maximum number of correction attempts
+        
+    Returns:
+        Validated and corrected CV data
+    """
+    
+    for attempt in range(max_retries + 1):
+        print(f"\n{'='*60}")
+        print(f"GENERATION ATTEMPT {attempt + 1}/{max_retries + 1}")
+        print(f"{'='*60}\n")
+        
+        # Generate CV
+        cv_data = generate_optimized_profile(profile, job_info, model_name)
+        
+        # Validate
+        is_valid, issues = _validate_cv_strict(cv_data, profile, job_info)
+        
+        if is_valid:
+            print("✅ CV passed all validation checks!")
+            return cv_data
+        
+        if attempt < max_retries:
+            print(f"\n⚠️ Validation failed. Issues found: {len(issues)}")
+            for issue in issues:
+                print(f"   - {issue['message']}")
+            
+            # Use LLM to fix issues
+            print(f"\n🔧 Attempting to fix issues (attempt {attempt + 1}/{max_retries})...")
+            cv_data = _fix_cv_with_llm(cv_data, profile, issues, job_info, model_name)
+        else:
+            print(f"\n⚠️ Maximum retries reached. Applying emergency fixes...")
+            cv_data = _apply_emergency_fixes(cv_data, profile, issues)
+    
+    return cv_data
 
+
+def _validate_cv_strict(cv_data: Dict, original_profile: Dict, job_info: Dict) -> Tuple[bool, List[Dict]]:
+    """Strict validation with detailed issue reporting."""
+    
+    issues = []
+    
+    # 1. Check for invented experiences
+    original_exp_keys = {
+        (exp.get('title', ''), exp.get('company', '')) 
+        for exp in original_profile.get('experience', [])
+    }
+    output_exp_keys = {
+        (exp.get('title', ''), exp.get('company', '')) 
+        for exp in cv_data.get('experience', [])
+    }
+    
+    invented_exp = output_exp_keys - original_exp_keys
+    if invented_exp:
+        issues.append({
+            "type": "invented_experience",
+            "severity": "critical",
+            "message": f"Created non-existent experiences: {invented_exp}",
+            "invented": list(invented_exp)
+        })
+    
+    # 2. Check for invented projects
+    original_proj_keys = {proj.get('name', '') for proj in original_profile.get('projects', [])}
+    output_proj_keys = {proj.get('name', '') for proj in cv_data.get('projects', [])}
+    
+    invented_proj = output_proj_keys - original_proj_keys
+    if invented_proj:
+        issues.append({
+            "type": "invented_project",
+            "severity": "critical",
+            "message": f"Created non-existent projects: {invented_proj}",
+            "invented": list(invented_proj)
+        })
+    
+    # 3. Check content limits (one-page constraint)
+    exp_count = len(cv_data.get('experience', []))
+    proj_count = len(cv_data.get('projects', []))
+    
+    if exp_count > 3:
+        issues.append({
+            "type": "too_many_experiences",
+            "severity": "high",
+            "message": f"Too many experiences: {exp_count} (max 3)",
+            "count": exp_count
+        })
+    
+    if proj_count > 4:
+        issues.append({
+            "type": "too_many_projects",
+            "severity": "high",
+            "message": f"Too many projects: {proj_count} (max 4)",
+            "count": proj_count
+        })
+    
+    total_items = exp_count + proj_count
+    if total_items > 7:
+        issues.append({
+            "type": "too_much_content",
+            "severity": "high",
+            "message": f"Total items {total_items} (exp+proj). Max 7 for one page.",
+            "total": total_items
+        })
+    
+    # 4. Check for excessive bullets
+    for i, exp in enumerate(cv_data.get('experience', [])):
+        bullets = len(exp.get('descrition_list', []))
+        if bullets > 4:
+            issues.append({
+                "type": "too_many_bullets",
+                "severity": "medium",
+                "message": f"Experience {i} has {bullets} bullets (max 4)",
+                "experience_index": i,
+                "count": bullets
+            })
+    
+    # 5. Check required fields
+    if not cv_data.get('personal_info', {}).get('name'):
+        issues.append({
+            "type": "missing_name",
+            "severity": "critical",
+            "message": "Missing personal name"
+        })
+    
+    if not cv_data.get('summary', '').strip():
+        issues.append({
+            "type": "missing_summary",
+            "severity": "high",
+            "message": "Summary is empty"
+        })
+    
+    if len(cv_data.get('skills', [])) < 10:
+        issues.append({
+            "type": "too_few_skills",
+            "severity": "medium",
+            "message": f"Only {len(cv_data.get('skills', []))} skills (min 15-20 recommended)"
+        })
+    
+    # 6. Check for empty experiences/projects
+    if exp_count == 0:
+        issues.append({
+            "type": "no_experiences",
+            "severity": "critical",
+            "message": "No experiences in output"
+        })
+    
+    if proj_count == 0:
+        issues.append({
+            "type": "no_projects",
+            "severity": "high",
+            "message": "No projects in output"
+        })
+    
+    is_valid = len([i for i in issues if i['severity'] == 'critical']) == 0
+    
+    return is_valid, issues
+
+
+def _fix_cv_with_llm(cv_data: Dict, original_profile: Dict, issues: List[Dict], 
+                     job_info: Dict, model_name: str) -> Dict:
+    """Use LLM to fix validation issues."""
+    
+    issues_summary = "\n".join([f"- {issue['message']}" for issue in issues])
+    
+    prompt = f"""
+You are fixing a CV that failed validation. Apply ONLY the necessary corrections.
+
+VALIDATION ISSUES FOUND:
+{issues_summary}
+
+ORIGINAL PROFILE (for reference - you can ONLY select from here):
+{json.dumps(original_profile, indent=2, ensure_ascii=False)}
+
+CURRENT CV OUTPUT (with issues):
+{json.dumps(cv_data, indent=2, ensure_ascii=False)}
+
+CORRECTION INSTRUCTIONS:
+1. If experiences/projects were invented: REMOVE them, select only from original profile
+2. If too many items: REMOVE lowest-relevance ones until limits met (max 3 exp, 4 proj)
+3. If too many bullets: KEEP only 3-4 best bullets per experience
+4. If missing data: ADD from original profile
+5. Keep ALL other content exactly as-is
+
+CRITICAL: 
+- ONLY select experiences from original "experience" array
+- ONLY select projects from original "projects" array
+- Do not create new content
+- Just remove excess and select from originals
+
+OUTPUT corrected JSON (no markdown):
+"""
+
+    output = replicate.run(model_name, input={"prompt": prompt})
+    content = "".join([str(x) for x in output]).strip()
+    
+    # Clean markdown
+    if content.startswith("```json"):
+        content = content.split("```json")[1]
+    if content.startswith("```"):
+        content = content.split("```")[1]
+    if content.endswith("```"):
+        content = content.rsplit("```", 1)[0]
+    content = content.strip()
+    
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        print("⚠️ LLM fix failed, applying emergency fixes")
+        return _apply_emergency_fixes(cv_data, original_profile, issues)
+
+
+def _apply_emergency_fixes(cv_data: Dict, original_profile: Dict, issues: List[Dict]) -> Dict:
+    """Apply hard-coded fixes when LLM fails."""
+    
+    corrected = cv_data.copy()
+    
+    print("🚨 Applying emergency fixes...")
+    
+    # Fix 1: Remove invented experiences
+    original_exp_keys = {
+        (exp.get('title', ''), exp.get('company', '')) 
+        for exp in original_profile.get('experience', [])
+    }
+    
+    valid_experiences = []
+    for exp in corrected.get('experience', []):
+        key = (exp.get('title', ''), exp.get('company', ''))
+        if key in original_exp_keys:
+            valid_experiences.append(exp)
+        else:
+            print(f"   Removed invented experience: {key}")
+    
+    corrected['experience'] = valid_experiences[:3]  # Max 3
+    
+    # Fix 2: Remove invented projects
+    original_proj_keys = {proj.get('name', '') for proj in original_profile.get('projects', [])}
+    
+    valid_projects = []
+    for proj in corrected.get('projects', []):
+        name = proj.get('name', '')
+        if name in original_proj_keys:
+            valid_projects.append(proj)
+        else:
+            print(f"   Removed invented project: {name}")
+    
+    corrected['projects'] = valid_projects[:4]  # Max 4
+    
+    # Fix 3: Trim bullets
+    for i, exp in enumerate(corrected.get('experience', [])):
+        bullets = exp.get('descrition_list', [])
+        if len(bullets) > 4:
+            corrected['experience'][i]['descrition_list'] = bullets[:4]
+            print(f"   Trimmed bullets for experience {i}")
+    
+    # Fix 4: Ensure minimum content if we removed too much
+    if len(corrected.get('experience', [])) < 2 and len(original_profile.get('experience', [])) >= 2:
+        print("   Restoring minimum experiences from original")
+        corrected['experience'] = original_profile['experience'][:2]
+    
+    if len(corrected.get('projects', [])) < 3 and len(original_profile.get('projects', [])) >= 3:
+        print("   Restoring minimum projects from original")
+        corrected['projects'] = original_profile['projects'][:3]
+    
+    # Fix 5: Ensure education is preserved
+    if not corrected.get('education'):
+        corrected['education'] = original_profile.get('education', [])
+    
+    # Fix 6: Trim skills if too many
+    if len(corrected.get('skills', [])) > 30:
+        corrected['skills'] = corrected['skills'][:25]
+        print(f"   Trimmed skills to 25")
+    
+    return corrected
 
 def generate_optimized_profile(profile: dict, job_info: dict, model_name: str) -> dict:
     """

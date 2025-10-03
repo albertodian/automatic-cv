@@ -4,7 +4,18 @@ import subprocess
 import os
 
 
-def render_cv_pdf_html(profile, template_path="templates/cv_template.html", output_pdf="output/cv_output.pdf"):
+def render_cv_pdf_html(profile, template, output_pdf="output/cv_output.pdf"):
+    
+    if template == "tech":
+        template_path = "templates/cv_template_tech.html"
+    elif template == "business":
+        template_path = "templates/cv_template_business.html"
+    elif template == "modern":
+        template_path = "templates/cv_template_modern.html"
+    else:
+        raise ValueError("Invalid template type. Choose 'tech', 'business', or 'modern'.")
+
+    
     with open(template_path, "r", encoding="utf-8") as f:
         template_content = f.read()
 
@@ -24,15 +35,7 @@ def render_cv_pdf_latex(profile: dict,
                   template: str,
                   output_pdf: str = "output/cv_output.pdf"):
     
-    if template == "tech":
-        template_path = "templates/cv_template_tech.html"
-    elif template == "business":
-        template_path = "templates/cv_template_business.html"
-    elif template == "modern":
-        template_path = "templates/cv_template_modern.html"
-    else:
-        raise ValueError("Invalid template type. Choose 'tech', 'business', or 'modern'.")
-
+    
     with open(template_path, "r", encoding="utf-8") as f:
         template_content = f.read()
 
