@@ -1,5 +1,3 @@
-In the time it takes you to read this job description, RapidSOS will have handled ~1,380 emergencies.
-
 At RapidSOS, we are committed to using technology to build a safer, stronger future and working together to save lives. We’re in an exciting phase of growth, welcoming new members from across the globe to our mission-driven, ambitious, and inclusive team. Our work is founded on our values of trust and safety, pioneering, urgency, and purpose over pride, all of which support a company culture where people can innovate, collaborate, grow, and, above all, make an impact. If that sounds like an exciting opportunity, we want to hear from you!
 
 At RapidSOS, we are empowering safer, stronger communities with faster, data-driven emergency response. In partnership with public safety, RapidSOS created the world’s first intelligent safety platform that securely links life-saving data from 600 million+ connected devices, apps and sensors and 200+ technology partners directly to RapidSOS Safety Agents, 911, and first responders globally. The platform is used by over 22,000+ first responder agencies in six countries and supports 171 million+ emergencies each year. Whether there’s an unsafe moment or an emergency, RapidSOS Ready devices, vehicles, homes, or buildings deliver essential data to the right place when it matters most. 
@@ -24,3 +22,4 @@ Ability to tackle multimodal data: We have structured/unstructured data, audio, 
 Familiarity with data warehouses: DataBricks preferred but we’re happy to bring a great candidate up to speed!
 Communication: Excellent verbal and written communication skills, with the ability to convey complex technical concepts to non-technical stakeholders. Self-starter with a proactive & creative approach to problem-solving and a strong sense of ownership.
 Travel & On-call: Ability and willingness to travel for internal team gatherings a few days per quarter. Ability and willingness to be on-call on a weekly rotational basis. 
+Please note that we are open to hiring at different levels for this role! 

@@ -41,7 +41,7 @@
         "Collected ~2000 robot trajectories, designed a dataset from scratch to finetune OpenVLA-OFT model (RLDS, Tensorflow).",
         "Enhancing VLAs capabilities using Agentic AI Frameworks (AutoGen, LangChain, LangGraph). Studying AgenticVLAs performances in human populated environments."
       ],
-      "skills": ["Python", "ROS", "ROS#", "Unity", "MetaSDK", "VLA", "OpenVLA", "Lerobot", "LLM", "AutoGen", "Langchain", "C++", "C#", "Git", "Robotics"],
+      "skills": ["Python", "ROS", "ROS#", "Unity", "MetaSDK", "VLA", "OpenVLA", "Lerobot", "LLM", "AutoGen", "Langchain", "C++", "C#", "Git", "Robotics", "Agentic AI"],
       "reference": "Dr. Massimiliano Maule",
       "reference_letter_url": "https://drive.google.com/file/d/1MkB-94DfJ-vR13I8-p47zmRMoSBDE_3t/view?usp=sharing"
       
@@ -83,8 +83,8 @@
       "name": "Automatic CV Generator",
       "role": "Developer and AI Engineer",
       "year": "2025",
-      "description": "Developed a system to modify your CV based on a job description using LLMs to maximise the match between your profile and the job requirements. It renders the result into a clean, ATS-friendly PDF using LaTeX templates.",
-      "skills": ["Ollama", "Python", "LaTeX", "Git", "Playwright", "RestAPI", "UI/UX Design", "Streamlit", "Web Scraping", "Weasyprint"],
+      "description": "Developed a system to modify your CV based on a job description using LLMs to maximise the match between your profile and the job requirements. It renders the result into a clean, ATS-friendly PDF using HTML and CSS templates.",
+      "skills": ["Ollama", "Python", "LaTeX", "Git", "Playwright", "RestAPI", "UI/UX Design", "Streamlit", "Web Scraping", "Weasyprint", "Agentic AI"],
       "url": "https://github.com/albertodian/automatic-cv"
     },
     {   

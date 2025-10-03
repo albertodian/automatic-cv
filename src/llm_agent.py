@@ -23,233 +23,221 @@ def generate_optimized_profile(profile: dict, job_info: dict, model_name: str) -
     while maintaining authenticity and fitting on ONE page.
     """
     prompt = f"""
-You are an expert ATS (Applicant Tracking System) optimization specialist. Your goal is to create a ONE-PAGE CV that maximizes ATS score while looking authentic.
+  You are an expert ATS (Applicant Tracking System) optimization specialist. Your goal is to create a ONE-PAGE CV that maximizes ATS score while looking authentic.
 
-CRITICAL PAGE LIMIT RULE:
-⚠️ The CV MUST fit on ONE page when rendered. You MUST remove content to achieve this:
-- Keep maximum 2-3 experiences (remove least relevant)
-- Keep maximum 3-4 projects (remove least relevant)
-- Each experience should have 3-4 bullets max in descrition_list
-- Prioritize recent and relevant experiences over older/unrelated ones
-- ⚠️ NEVER remove or modify education entries - keep ALL education exactly as provided
+  🚨 CRITICAL RULE: YOU MUST ONLY SELECT FROM EXISTING DATA 🚨
+  - You can ONLY choose experiences that exist in the "experience" array
+  - You can ONLY choose projects that exist in the "projects" array
+  - DO NOT create new entries
+  - DO NOT merge experiences into projects or vice versa
+  - DO NOT invent job titles, companies, or roles
+  - SELECTION ONLY - not creation
 
-OPTIMIZATION STRATEGY:
+  CRITICAL PAGE LIMIT RULE:
+  ⚠️ The CV MUST fit on ONE page when rendered. You MUST remove content to achieve this:
+  - Keep maximum 2-3 experiences from the "experience" array (remove least relevant)
+  - Keep maximum 3-4 projects from the "projects" array (remove least relevant)
+  - Each experience should have 3-4 bullets max in descrition_list
+  - Prioritize recent and relevant entries over older/unrelated ones
 
-1. CONTENT SELECTION - SYSTEMATIC RELEVANCE SCORING (DO THIS FIRST):
-   
-   A. EXPERIENCE RELEVANCE SCORING:
-   For each experience, assign a relevance score (0-10) based on:
-   - Technical alignment: Does it use similar technologies/skills as the job? (0-4 points)
-   - Domain alignment: Is it in a similar field/industry? (0-3 points)
-   - Recency: How recent is it? (0-2 points: 2024-2025=2pts, 2022-2023=1pt, before 2022=0pts)
-   - Seniority/Impact: Does the role level match the job posting? (0-1 point)
-   
-   Scoring examples:
-   - AI Engineer at tech company using ML/Python for recent work = 9-10 points (KEEP)
-   - Software intern at related company 2 years ago = 5-6 points (MAYBE)
-   - Non-technical mentor role from 2020 = 1-3 points (REMOVE)
-   
-   RULE: Keep the top 2-3 experiences with highest scores. Always prefer recent (2023+) technical roles.
-   
-   B. PROJECT RELEVANCE SCORING:
-   For each project, assign a relevance score (0-10) based on:
-   - Technology overlap: Does it use tools/frameworks mentioned in job posting? (0-5 points)
-   - Problem domain: Does it solve similar problems as the job? (0-3 points)
-   - Complexity/Impact: Is it a substantial, impressive project? (0-2 points)
-   
-   Scoring examples:
-   - ML project using same stack as job posting = 9-10 points (KEEP)
-   - Web app with some relevant tech = 5-6 points (MAYBE)
-   - Unrelated creative/design project = 2-4 points (REMOVE)
-   
-   RULE: Keep the top 3-4 projects with highest scores. Prioritize technical projects over creative ones unless creativity is in job posting.
-   
-   C. SELECTION LOGIC:
-   - Score ALL experiences and projects systematically
-   - Sort by score (highest first)
-   - Keep top 2-3 experiences (minimum 2, maximum 3)
-   - Keep top 3-4 projects (minimum 3, maximum 4)
-   - Document your reasoning mentally: "Keeping X because [technical alignment + recency], removing Y because [low relevance + old]"
+  EDUCATION CONDENSING RULE:
+  🎓 MANDATORY EDUCATION CONDENSING LOGIC:
+  
+  1. DOUBLE/JOINT DEGREE DETECTION:
+     - Look for education entries with SAME or OVERLAPPING years (e.g., "sep 2023 - current" and "sep 2023 - sep 2024")
+     - Look for entries mentioning "Double Master", "Joint Degree", "EIT Digital", or similar programs
+     - Look for entries from different institutions but same time period (exchange programs)
+  
+  2. CONDENSING RULES:
+     - IF multiple entries are clearly part of the same program → CONDENSE to 1 entry
+     - IF Bachelor's + Master's (different time periods) → Keep separate
+     - IF same degree level with overlapping years → CONDENSE to 1 entry
+  
+  3. HOW TO CONDENSE:
+     - Combine degree names: "Double MSc in Robotics and Artificial Intelligence"
+     - Combine institutions: "University of Trento & Aalto University" 
+     - Combine locations: "Trento, Italy & Espoo, Finland"
+     - Use the LONGEST time span: "Sep 2023 - Aug 2025"
+     - Combine descriptions: Include ALL specializations from both entries
+     - Keep best grade if multiple exist
+  
+  EXAMPLE CONDENSING:
+  FROM 4 entries → TO 2 entries:
+  Entry 1: "Double MSc in Robotics and Artificial Intelligence - University of Trento & Aalto University (Sep 2023 - Aug 2025)"
+  Entry 2: "BSc in Computer, Communications and Electronic Engineering - University of Trento (Sep 2020 - Jul 2023)"
 
-2. KEYWORD IDENTIFICATION:
-   - Extract 10-15 critical technical keywords from the job posting
-   - Focus on: specific tools (AWS, Docker, Kubernetes), methodologies (MLOps, Agile, CI/CD), technical skills, and domain-specific terms
+  OPTIMIZATION STRATEGY:
 
-3. SKILLS SECTION - RICH AND COMPREHENSIVE:
-   - Goal: Create a rich, comprehensive skills array (30-40 items total)
-   - Add 8-12 critical keywords from job posting
-   - Keep most original skills, only remove 2-3 truly irrelevant ones
-   - ⚠️ CRITICAL: Mix new keywords THROUGHOUT the array, not just at the end
-   - Pattern: [original, original, NEW_KEYWORD, original, original, NEW_KEYWORD, original, NEW_KEYWORD, original, original]
-   - Include variations of keywords when relevant (e.g., "AWS", "AWS Lambda", "AWS S3")
-   - Example result: ["Python", "C++", "AWS", "TensorFlow", "Keras", "MLOps", "PyTorch", "Docker", "OpenCV", "ROS", "Kubernetes", "CI/CD", "REST APIs", ...]
-   - The final skills array should feel comprehensive and impressive
+  1. CONTENT SELECTION - SYSTEMATIC RELEVANCE SCORING (DO THIS FIRST):
+     
+     A. EXPERIENCE RELEVANCE SCORING:
+     Look at the "experience" array in the input. For EACH entry, assign a score (0-10):
+     - Technical alignment: Does it use similar technologies/skills as the job? (0-4 points)
+     - Domain alignment: Is it in a similar field/industry? (0-3 points)
+     - Recency: How recent is it? (0-2 points: 2024-2025=2pts, 2022-2023=1pt, before 2022=0pts)
+     - Seniority/Impact: Does the role level match the job posting? (0-1 point)
+     
+     THEN: Select the top 2-3 entries with highest scores. Copy those entries to output, remove the rest.
+     
+     B. PROJECT RELEVANCE SCORING:
+     Look at the "projects" array in the input. For EACH entry, assign a score (0-10):
+     - Technology overlap: Does it use tools/frameworks mentioned in job posting? (0-5 points)
+     - Problem domain: Does it solve similar problems as the job? (0-3 points)
+     - Complexity/Impact: Is it a substantial, impressive project? (0-2 points)
+     
+     THEN: Select the top 3-4 entries with highest scores. Copy those entries to output, remove the rest.
+     
+     C. VERIFICATION:
+     - Count experiences in input: {len(profile.get('experience', []))} experiences exist
+     - Count projects in input: {len(profile.get('projects', []))} projects exist
+     - You can only select from these existing entries
+     - Output should have 2-3 experiences + 3-4 projects = 5-7 total items
 
-4. EXPERIENCE SECTION - STRATEGIC ENHANCEMENT:
-   - Keep only 2-3 most relevant experiences based on scoring (REMOVE others completely)
-   - For kept experiences, limit to 3-4 bullets in descrition_list
-   - Enhance 2-3 bullets per experience with keywords naturally integrated
-   - Update skills arrays with 2-4 new keywords MIXED throughout (not at end)
-   - Example bullet enhancement: "Collected ~2000 robot trajectories using cloud storage (AWS S3) and designed dataset for model finetuning with MLOps pipeline"
+  2. KEYWORD IDENTIFICATION:
+     - Extract 10-15 critical technical keywords from the job posting
+     - Focus on: specific tools (AWS, Docker, Kubernetes), methodologies (MLOps, Agile, CI/CD), technical skills
 
-5. PROJECTS SECTION - SELECTIVE INCLUSION:
-   - Keep only 3-4 most relevant projects based on scoring (REMOVE others completely)
-   - Enhance 2 projects: improve descriptions with 2-3 keywords
-   - Update skills arrays: add 2-4 keywords MIXED in (not appended at end)
-   - Keep other projects minimal/unchanged
+  3. SKILLS SECTION - RICH AND COMPREHENSIVE:
+     - Goal: Create a rich skills array (20-25 items total)
+     - Add 8-12 critical keywords from job posting
+     - Keep most original skills, only remove 2-3 truly irrelevant ones
+     - ⚠️ CRITICAL: Mix new keywords THROUGHOUT the array, not just at the end
+     - Pattern: [original, original, NEW_KEYWORD, original, original, NEW_KEYWORD, original]
 
-6. SUMMARY - HONEST CAPABILITIES AND POTENTIAL:
-   - Maximum 2 sentences (not 3-4!)
-   - Include 3-4 most critical keywords from job posting
-   - Should be punchy and direct
-   - ⚠️ CRITICAL HONESTY RULE: Focus on skills, capabilities, and what the candidate CAN do, NOT false claims of experience
-   - Use language like: "specializing in", "skilled in", "passionate about", "focused on", "capabilities in"
-   - AVOID: "experienced in X" unless they actually have that experience documented in their CV
-   - AVOID: Claiming specific domain experience they don't have (e.g., don't say "experienced in healthcare AI" if they've never worked in healthcare)
-   - Good example: "AI Engineer specializing in machine learning and computer vision with strong capabilities in cloud deployment and MLOps pipelines."
-   - Bad example: "AI Engineer with 5 years experience in production ML systems and enterprise cloud architecture" (if they don't have this)
-   - Show how their ACTUAL skills align with the job requirements, not invented experience
+  4. EXPERIENCE SECTION - ENHANCE EXISTING ONLY:
+     - Take the 2-3 selected experiences from input
+     - For each: keep title, company, location, years, description EXACTLY as-is
+     - Only modify: descrition_list (enhance 2-3 bullets with keywords) and skills array
+     - Limit descrition_list to 3-4 best bullets
+     - Add 2-4 new keywords to skills array, mixed throughout
 
-7. KEYWORD PLACEMENT STRATEGY:
-   - Each keyword appears 2-3 times across ENTIRE CV:
-     * Once in main skills array (mixed in naturally)
-     * Once in experience/project bullet or description
-     * Maybe once in experience/project skills array
-   - Use variations: "AWS" → "cloud infrastructure (AWS)" → "AWS Lambda" → "AWS services"
-   - Include related terms: If job mentions "cloud", add both "AWS" and "Cloud Computing"
-   - Never cluster all new keywords together
+  5. PROJECTS SECTION - ENHANCE EXISTING ONLY:
+     - Take the 3-4 selected projects from input
+     - For each: keep name, role, year, url EXACTLY as-is
+     - Only modify: description (add 1-2 keywords naturally) and skills array
+     - Add 2-4 new keywords to skills array, mixed throughout
 
-8. SELECTION CONSISTENCY RULES:
-   - ALWAYS keep the most recent technical experience (even if relevance score is moderate)
-   - ALWAYS prefer experiences/projects that demonstrate hands-on technical work over mentoring/leadership roles (unless job is leadership)
-   - If two items have similar scores, keep the more recent one
-   - If candidate has limited experience (only 2-3 total), keep all experiences even if one is less relevant
-   - Be consistent: If you keep a certain type of project for one candidate, keep similar projects for other candidates with similar job postings
+  6. SUMMARY - HONEST CAPABILITIES:
+     - Maximum 2 sentences
+     - Include 3-4 most critical keywords from job posting
+     - Focus on skills and capabilities: "specializing in", "skilled in", "passionate about"
+     - AVOID: "experienced in X" unless they actually have documented experience
 
-9. SKILLS ARRAY RICHNESS:
-   - Target: 30-40 total skills in final array
-   - Include: programming languages, frameworks, tools, platforms, methodologies, domain skills
-   - Mix technical and soft skills where relevant to job posting
-   - Group similar items mentally but mix in array: languages scattered, tools scattered, platforms scattered
-   - Examples to include if relevant: "REST APIs", "Microservices", "Agile", "Scrum", "CI/CD", "DevOps", "Data Pipelines", "Model Deployment", "A/B Testing"
+  7. KEYWORD PLACEMENT STRATEGY:
+     - Each keyword appears 2-3 times across ENTIRE CV
+     - Use variations: "AWS" → "cloud infrastructure" → "AWS services"
+     - Never cluster all new keywords together
 
-INPUT DATA:
+  8. EDUCATION - MANDATORY CONDENSING:
+     - ALWAYS check for overlapping years or double degree programs
+     - Bachelor's and Master's with different years = keep separate
+     - Multiple entries with same/overlapping years = CONDENSE into 1 entry
+     - Example: 4 education entries about the same double degree → condense to 1 entry
+     - Make descriptions concise (max 1 sentence)
+     - Format dates consistently (e.g., "Sep 2023 - Aug 2025")
 
-Candidate Profile:
-{json.dumps(profile, indent=2, ensure_ascii=False)}
 
-Job Posting:
-{json.dumps(job_info, indent=2, ensure_ascii=False)}
+  INPUT DATA:
 
-STEP-BY-STEP PROCESS (Follow this order):
-Step 1: Score each experience (0-10) based on technical alignment, domain alignment, recency, seniority
-Step 2: Score each project (0-10) based on technology overlap, problem domain, complexity
-Step 3: Select top 2-3 experiences and top 3-4 projects to keep
-Step 4: For kept items, identify which bullets to keep (3-4 per experience)
-Step 5: Identify 8-12 keywords from job posting to add
-Step 6: Enhance kept experiences/projects with keywords
-Step 7: Update skills array (30-40 items, mixed placement)
-Step 8: Write honest, capability-focused summary
+  Candidate Profile:
+  {json.dumps(profile, indent=2, ensure_ascii=False)}
 
-OPTIMIZATION CHECKLIST:
-1. ✓ Systematically score all experiences and projects
-2. ✓ Remove content to fit one page (keep top 2-3 experiences, top 3-4 projects based on scores)
-3. ✓ Keep ALL education entries unchanged
-4. ✓ Summary is exactly 2 sentences focusing on capabilities, NOT false experience claims
-5. ✓ Add 8-12 keywords to main skills array MIXED throughout
-6. ✓ Main skills array has 30-40 items total (rich and comprehensive)
-7. ✓ Enhance 4-6 bullets across kept experiences
-8. ✓ Enhance 2 project descriptions
-9. ✓ All new keywords are MIXED into lists, not appended at end
-10. ✓ Each keyword appears 2-3 times total across CV
+  Job Posting:
+  {json.dumps(job_info, indent=2, ensure_ascii=False)}
 
-OUTPUT REQUIREMENTS:
-Return ONLY valid JSON, no markdown, no commentary.
+  MANDATORY PROCESS:
+  Step 1: List all experiences from input and score each (0-10)
+  Step 2: List all projects from input and score each (0-10)
+  Step 3: Select top 2-3 experiences BY INDEX from input array
+  Step 4: Select top 3-4 projects BY INDEX from input array
+  Step 5: ANALYZE EDUCATION: Check for overlapping years/double degrees and plan condensing
+  Step 6: Copy selected entries, enhance with keywords
+  Step 7: Build final JSON with ONLY selected entries
+  Step 8: CONDENSE EDUCATION: Merge overlapping/double degree entries into fewer entries
 
-{{
-  "personal_info": {{
-    "name": "string",
-    "email": "string",
-    "phone": "string",
-    "nationality": "string",
-    "age": number,
-    "linkedin": "string",
-    "github": "string",
-    "languages": ["array"]
-  }},
-  "summary": "EXACTLY 2 sentences. Include 3-4 keywords naturally. Focus on CAPABILITIES and SKILLS, not false experience. Use: 'specializing in', 'skilled in', 'passionate about', 'capabilities in'. AVOID: 'experienced in X' unless proven in CV.",
-  "education": [
+  VERIFICATION CHECKLIST BEFORE OUTPUT:
+  □ Did I create any new experience entries? (If YES, this is WRONG - remove them)
+  □ Did I create any new project entries? (If YES, this is WRONG - remove them)
+  □ Did I mix up experiences and projects? (If YES, this is WRONG - fix it)
+  □ Are all experiences from the original "experience" array? (Must be YES)
+  □ Are all projects from the original "projects" array? (Must be YES)
+  □ Did I keep company names, job titles exactly as input? (Must be YES)
+  □ Did I keep project names, years, URLs exactly as input? (Must be YES)
+  □ CRITICAL: Did I condense education entries with overlapping years/double degrees? (Must be YES if applicable)
+  □ Do I have fewer education entries in output than input due to condensing? (Should be YES if there were overlapping degrees)
+
+  OUTPUT REQUIREMENTS:
+  Return ONLY valid JSON, no markdown, no commentary.
+
+  {{
+    "personal_info": {{
+    "name": "string - EXACT from input",
+    "email": "string - EXACT from input",
+    "phone": "string - EXACT from input",
+    "nationality": "string - EXACT from input",
+    "age": number - EXACT from input,
+    "linkedin": "string - EXACT from input",
+    "github": "string - EXACT from input",
+    "languages": ["array - EXACT from input"]
+    }},
+    "summary": "EXACTLY 2 sentences with 3-4 keywords. Focus on capabilities, not false claims.",
+    "education": [
+    "MANDATORY: CONDENSE overlapping/double degrees into FEWER entries than input",
+    "Example: 4 input entries about same double degree → 1 output entry",
+    "Keep Bachelor's separate from Master's if different time periods",
     {{
-      "degree": "string",
-      "institution": "string",
-      "location": "string",
-      "year": "string",
-      "description": "string",
-      "grade": "string"
+      "degree": "EXACT from input, or COMBINED if condensing (e.g., 'Double MSc in Robotics and AI')",
+      "institution": "EXACT from input, or COMBINED if condensing (e.g., 'Univ of Trento & Aalto Univ')",
+      "location": "EXACT from input, or COMBINED if condensing (e.g., 'Trento, IT & Espoo, FI')",
+      "year": "IMPORTANT: Format as 'Mon YYYY - Mon YYYY' using LONGEST span if condensing",
+      "description": "Keep existing but max 1 sentence, COMBINE if condensing",
+      "grade": "EXACT from input, keep best grade if condensing"
     }}
-  ],
-  "experience": [
-    "KEEP ONLY TOP 2-3 BASED ON RELEVANCE SCORING - Must be most recent and technically aligned",
+    ],
+    "experience": [
+    "SELECT 2-3 ENTRIES FROM INPUT 'experience' ARRAY ONLY",
+    "DO NOT CREATE NEW ENTRIES",
     {{
-      "title": "string",
-      "company": "string",
-      "location": "string",
-      "years": "string",
-      "description": "string",
+      "title": "EXACT from input",
+      "company": "EXACT from input",
+      "location": "EXACT from input",
+      "years": "EXACT from input",
+      "description": "EXACT from input",
       "descrition_list": [
-        "MAX 3-4 bullets per experience",
-        "Enhance 2-3 bullets with keywords naturally",
-        "Keep most impactful bullets based on relevance"
+      "Keep 3-4 best bullets from input",
+      "Enhance 2-3 with keywords naturally"
       ],
-      "skills": ["Mix", "new", "keywords", "AWS", "throughout", "not", "at", "end"],
-      "reference": "string (if exists)",
-      "reference_letter_url": "string (if exists)"
+      "skills": ["Maximum 10 skills", "Mix new keywords throughout"],
+      "reference": "EXACT from input or empty",
+      "reference_letter_url": "EXACT from input or empty"
     }}
-  ],
-  "projects": [
-    "KEEP ONLY TOP 3-4 BASED ON RELEVANCE SCORING - Must have technology overlap with job",
+    ],
+    "projects": [
+    "SELECT 3-4 ENTRIES FROM INPUT 'projects' ARRAY ONLY",
+    "DO NOT CREATE NEW ENTRIES",
     {{
-      "name": "string",
-      "role": "string",
-      "year": "string",
-      "description": "Enhanced for top 2 projects with keywords",
-      "skills": ["Mix", "keywords", "MLOps", "naturally", "not", "appended"],
-      "url": "string"
+      "name": "EXACT from input",
+      "role": "EXACT from input",
+      "year": "EXACT from input",
+      "description": "Enhance with 1-2 keywords",
+      "skills": ["Maximum 10 skills", "Mix new keywords throughout"],
+      "url": "EXACT from input"
     }}
-  ],
-  "skills": [
-    "TARGET: 30-40 items total - make it rich and comprehensive",
-    "Python",
-    "C++",
-    "AWS",
-    "TensorFlow",
-    "Keras",
-    "MLOps",
-    "PyTorch",
-    "Docker",
-    "OpenCV",
-    "CI/CD",
-    "REST APIs",
-    "Cloud Computing",
-    "MIX NEW KEYWORDS THROUGHOUT - NOT ALL AT THE END",
-    "Pattern: original, original, NEW, original, original, NEW, original",
-    "Include variations of important keywords",
-    "Should feel impressive and comprehensive"
-  ]
-}}
+    ],
+    "skills": [
+    "TARGET: 20-25 items total",
+    "Mix new keywords throughout - NOT at end",
+    "Pattern: original, original, NEW, original, NEW, original"
+    ]
+  }}
 
-REMEMBER: 
-- Use systematic scoring (0-10) for consistent selection decisions
-- ONE PAGE is non-negotiable - be ruthless about removing low-scoring experiences/projects
-- NEVER remove education entries
-- Always prefer recent (2023+) technical work over older/non-technical work
-- Mix keywords naturally throughout all arrays
-- Summary must be exactly 2 sentences focusing on CAPABILITIES not false claims
-- Skills array should be rich (30-40 items)
-- Prioritize quality, honesty, and consistency
+  FINAL WARNING: 
+  - If you create ANY entry not in the input arrays, the output is INVALID
+  - If you mix experiences and projects, the output is INVALID
+  - SELECTION and ENHANCEMENT only - NO CREATION
 
-BEGIN OPTIMIZATION:
-"""
+  BEGIN OPTIMIZATION:
+  """
 
     output = replicate.run(
         model_name,
@@ -272,8 +260,26 @@ BEGIN OPTIMIZATION:
     except json.JSONDecodeError as e:
         raise ValueError(f"LLM did not return valid JSON:\n{content}") from e
 
-    return optimized_cv
+    # Post-processing validation
+    input_experience_titles = {exp.get('title', '') + exp.get('company', '') for exp in profile.get('experience', [])}
+    output_experience_titles = {exp.get('title', '') + exp.get('company', '') for exp in optimized_cv.get('experience', [])}
+    
+    input_project_names = {proj.get('name', '') for proj in profile.get('projects', [])}
+    output_project_names = {proj.get('name', '') for proj in optimized_cv.get('projects', [])}
+    
+    # Check for invented experiences
+    if not output_experience_titles.issubset(input_experience_titles):
+        print("⚠️ WARNING: LLM created experiences not in input!")
+        invented = output_experience_titles - input_experience_titles
+        print(f"Invented experiences: {invented}")
+    
+    # Check for invented projects
+    if not output_project_names.issubset(input_project_names):
+        print("⚠️ WARNING: LLM created projects not in input!")
+        invented = output_project_names - input_project_names
+        print(f"Invented projects: {invented}")
 
+    return optimized_cv
 
 
 def generate_cover_letter(profile: dict, job_text: str, model_name: str) -> str:
@@ -387,6 +393,7 @@ Rules:
 def extract_cv_from_pdf_smart(pdf_path: str, model_name: str) -> dict:
     """
     Smart CV extraction from PDF: tries fast methods first, falls back to OCR if needed.
+    Intelligently fills in missing structured information while preserving existing content.
     
     Args:
         pdf_path: Path to the PDF file
@@ -404,7 +411,6 @@ def extract_cv_from_pdf_smart(pdf_path: str, model_name: str) -> dict:
         
         # Method 1: Try pdfplumber (fast, works for 80% of CVs)
         try:
-
             print("Attempting extraction with pdfplumber...")
             with pdfplumber.open(file_path) as pdf:
                 for page in pdf.pages:
@@ -424,7 +430,7 @@ def extract_cv_from_pdf_smart(pdf_path: str, model_name: str) -> dict:
         
         # Method 2: Try PyMuPDF (fitz)
         try:
-
+            import fitz
             print("Attempting extraction with PyMuPDF...")
             doc = fitz.open(file_path)
             for page in doc:
@@ -443,7 +449,7 @@ def extract_cv_from_pdf_smart(pdf_path: str, model_name: str) -> dict:
         
         # Method 3: Try PyPDF2 (basic fallback)
         try:
-
+            import PyPDF2
             print("Attempting extraction with PyPDF2...")
             with open(file_path, 'rb') as file:
                 pdf_reader = PyPDF2.PdfReader(file)
@@ -463,7 +469,8 @@ def extract_cv_from_pdf_smart(pdf_path: str, model_name: str) -> dict:
         # Method 4: Fallback to OCR (slow but works on scanned PDFs)
         print("⚠ No text extraction worked, attempting OCR (this may take a minute)...")
         try:
-
+            from pdf2image import convert_from_path
+            import pytesseract
             
             images = convert_from_path(file_path, dpi=300)
             for i, image in enumerate(images):
@@ -494,96 +501,153 @@ def extract_cv_from_pdf_smart(pdf_path: str, model_name: str) -> dict:
         raise ValueError("Extracted text is empty.")
     
     print(f"\nExtracted {len(cv_text)} characters from PDF")
-    print("Sending to LLM for structured extraction...\n")
+    print("Sending to LLM for structured extraction and intelligent formatting...\n")
     
-    # Create extraction prompt
+    # Create extraction prompt with intelligent filling
     prompt = f"""
-You are an expert CV parser. Extract ALL information from the provided CV text and structure it into a specific JSON format.
+      You are an expert CV parser with intelligent formatting capabilities. Your task is to extract information from the CV and structure it properly, filling in missing structured elements where appropriate.
 
-CRITICAL INSTRUCTIONS:
-1. Extract ALL information accurately - do not skip or summarize
-2. Maintain exact dates, names, and details as written
-3. If information is missing, use empty strings "" or empty arrays []
-4. Do NOT invent or assume information that isn't in the CV
-5. Return ONLY valid JSON, no markdown, no commentary
+      CRITICAL INSTRUCTIONS:
 
-CV TEXT TO PARSE:
-{cv_text}
+      1. WHAT TO PRESERVE EXACTLY AS-IS (DO NOT MODIFY):
+      - Personal information (name, email, phone, LinkedIn, GitHub, etc.)
+      - Education details (degree names, institutions, grades)
+      - Company names, job titles, locations
+      - Project names, years, and URLs
+      - Any reference names and URLs
 
-REQUIRED JSON STRUCTURE (match this exactly):
-{{
-  "personal_info": {{
-    "name": "Full name from CV",
-    "email": "email address",
-    "phone": "phone number",
-    "nationality": "nationality if mentioned, otherwise empty string",
-    "age": age_as_number_if_mentioned_otherwise_0,
-    "linkedin": "LinkedIn URL if present",
-    "github": "GitHub URL if present",
-    "languages": ["array of languages with proficiency levels"]
-  }},
-  "summary": "Professional summary or objective statement - keep it as written in CV",
-  "education": [
-    {{
-      "degree": "Full degree name",
-      "institution": "University/School name",
-      "location": "City, Country",
-      "year": "Date range (e.g., 'Sep 2020 - Jul 2023')",
-      "description": "Additional details about specialization, coursework, etc.",
-      "grade": "GPA or grade if mentioned"
-    }}
-  ],
-  "experience": [
-    {{
-      "title": "Job title",
-      "company": "Company name",
-      "location": "City, Country",
-      "years": "Date range (e.g., 'Jan 2025 - Jul 2025')",
-      "description": "Brief one-line description of role or thesis if mentioned",
-      "descrition_list": [
-        "First responsibility/achievement bullet point",
-        "Second responsibility/achievement bullet point",
-        "Continue for all bullet points listed"
+      2. WHAT TO INTELLIGENTLY FORMAT/FILL:
+      
+      A. EXPERIENCE DESCRIPTIONS → descrition_list:
+        - If experience has a paragraph description, convert it into bullet points (descrition_list array)
+        - Break down responsibilities and achievements into 3-5 clear bullet points
+        - Each bullet should start with an action verb and be concise
+        - If already in bullet format, preserve them
+        - If very minimal description, create 2-3 bullets based on what's written
+        
+      B. PROJECT DESCRIPTIONS:
+        - If project description is missing or very brief, enhance it slightly based on the project name and skills
+        - Keep it to 1-2 sentences maximum
+        - If good description exists, keep it
+        
+      C. SKILLS ARRAYS:
+        - For experience "skills" array: Extract/infer technologies mentioned in the job description
+        - For project "skills" array: Extract/infer technologies mentioned in the project description
+        - For main "skills" array: Compile ALL skills mentioned throughout the CV
+        - If skills section is missing, create it by extracting technologies from all experiences and projects
+        
+      D. SUMMARY:
+        - If summary exists, keep it exactly as written
+        - If summary is missing or very generic, create a brief 1-2 sentence summary based on their experiences and skills
+        - Focus on their primary expertise and background
+
+      3. TIME INTERVAL FORMATTING (IMPORTANT):
+      - For every date or time interval (in education, experience, projects, etc.), rephrase it as "Mon YYYY - Mon YYYY" (e.g., "Sep 2018 - Jun 2022")
+      - Remove any words or phrases indicating duration (such as "7 years", "for 2 years", "duration: 3 years", etc.)
+      - If only a single date is present, format as "Mon YYYY"
+      - Use English month abbreviations (Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec)
+      - If dates are missing, leave the field as an empty string
+
+      4. EXTRACTION LOGIC:
+
+      Example transformation for experience:
+      
+      ORIGINAL: "Software Engineer at Google. Worked on backend systems. (2015-2022, 7 years)"
+      
+      TRANSFORM TO:
+      {{
+        "title": "Software Engineer",
+        "company": "Google",
+        "years": "Jan 2015 - Dec 2022",
+        "descrition_list": [
+        "Developed and maintained backend systems",
+        "Collaborated with cross-functional teams on system architecture"
+        ],
+        "skills": ["Backend Development", "System Architecture"]
+      }}
+
+      5. DO NOT INVENT:
+      - Do not invent companies, projects, or experiences that don't exist
+      - Do not add skills the person clearly doesn't have
+      - Do not change names or factual information
+      - Only infer/extract what's reasonable from the existing text
+
+      CV TEXT TO PARSE:
+      {cv_text}
+
+      REQUIRED JSON STRUCTURE:
+      {{
+      "personal_info": {{
+        "name": "Full name from CV - EXACT",
+        "email": "email address - EXACT",
+        "phone": "phone number - EXACT",
+        "nationality": "nationality if mentioned, otherwise empty string",
+        "age": age_as_number_if_mentioned_otherwise_0,
+        "linkedin": "LinkedIn URL if present - EXACT",
+        "github": "GitHub URL if present - EXACT",
+        "languages": ["array of languages with proficiency levels - EXACT or inferred from CV"]
+      }},
+      "summary": "Keep existing summary OR create brief 1-2 sentence summary if missing",
+      "education": [
+        {{
+        "degree": "Full degree name - EXACT",
+        "institution": "University/School name - EXACT",
+        "location": "City, Country - EXACT",
+        "year": "Date range - formatted as 'Mon YYYY - Mon YYYY', or 'Mon YYYY' if only one date, or empty if missing",
+        "description": "Specialization details - EXACT or empty if not mentioned",
+        "grade": "GPA/grade - EXACT or empty if not mentioned"
+        }}
       ],
-      "skills": ["array", "of", "technologies", "and", "skills", "used"],
-      "reference": "Reference person name if mentioned, otherwise empty string",
-      "reference_letter_url": "URL if provided, otherwise empty string"
-    }}
-  ],
-  "projects": [
-    {{
-      "name": "Project name",
-      "role": "Your role in the project",
-      "year": "Year (e.g., '2024')",
-      "description": "Project description as written",
-      "skills": ["technologies", "used", "in", "project"],
-      "url": "Project URL/GitHub link if provided"
-    }}
-  ],
-  "skills": [
-    "Extract all skills mentioned anywhere in CV",
-    "Include programming languages, frameworks, tools, methodologies",
-    "Keep as individual items in array"
-  ]
-}}
+      "experience": [
+        {{
+        "title": "Job title - EXACT",
+        "company": "Company name - EXACT",
+        "location": "City, Country - EXACT",
+        "years": "Date range - formatted as 'Mon YYYY - Mon YYYY', or 'Mon YYYY' if only one date, or empty if missing",
+        "description": "Brief one-line description - EXACT or inferred",
+        "descrition_list": [
+          "Convert paragraph descriptions into 3-5 bullet points",
+          "Each bullet: action verb + achievement/responsibility",
+          "Extract from existing text, do not invent"
+        ],
+        "skills": ["Extract technologies/tools mentioned in this role"],
+        "reference": "Reference name if mentioned - EXACT or empty",
+        "reference_letter_url": "URL if provided - EXACT or empty"
+        }}
+      ],
+      "projects": [
+        {{
+        "name": "Project name - EXACT",
+        "role": "Your role - EXACT or inferred from context",
+        "year": "Date range - formatted as 'Mon YYYY - Mon YYYY', or 'Mon YYYY' if only one date, or empty if missing",
+        "description": "Keep good description OR enhance if too brief (1-2 sentences max)",
+        "skills": ["Extract technologies mentioned OR infer from project name/description"],
+        "url": "URL - EXACT or empty"
+        }}
+      ],
+      "skills": [
+        "Extract ALL skills from entire CV",
+        "Include: programming languages, frameworks, tools, platforms, methodologies",
+        "Infer technologies mentioned in any experience or project",
+        "Create this array even if CV has no skills section"
+      ]
+      }}
 
-EXTRACTION RULES:
-- For experience descrition_list: Extract each bullet point as a separate array item
-- For skills arrays: Extract technologies mentioned in that specific experience/project
-- For main skills array: Compile ALL technical skills mentioned throughout the CV
-- Dates: Keep in original format from CV
-- If CV has sections not matching this structure, map them to the closest equivalent
-- If age is not explicitly stated, set to 0
-- Preserve all URLs exactly as they appear
-- Note: "descrition_list" spelling is intentional (keep the typo)
+      FORMATTING RULES:
+      - descrition_list: ALWAYS create this as an array of 3-5 bullet points per experience
+      - Skills arrays: ALWAYS populate by extracting from descriptions
+      - Keep the typo "descrition_list" (not "description_list")
+      - Use empty strings "" for missing optional fields
+      - Use empty arrays [] for missing array fields
+      - Preserve all URLs, emails, phone numbers exactly
 
-IMPORTANT: Return ONLY the JSON object. No explanation, no markdown formatting, no ```json``` tags.
+      IMPORTANT: Return ONLY the JSON object. No explanation, no markdown formatting, no ```json``` tags.
 
-BEGIN EXTRACTION:
-"""
+      BEGIN EXTRACTION AND INTELLIGENT FORMATTING:
+      """
 
     # Call LLM for extraction
-    print("Calling LLM for extraction...")
+    print("Calling LLM for extraction and formatting...")
     output = replicate.run(
         model_name,
         input={"prompt": prompt}
@@ -612,7 +676,7 @@ BEGIN EXTRACTION:
         if field not in cv_data:
             raise ValueError(f"Missing required field in extracted data: {field}")
     
-    print("✓ Successfully extracted and structured CV data\n")
+    print("✓ Successfully extracted and formatted CV data\n")
     return cv_data
 
 
