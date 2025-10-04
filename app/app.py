@@ -1,438 +1,466 @@
 """
-REST API for Automatic CV Generation
-Provides endpoints for CV optimization, PDF parsing, and document generation.
+FastAPI application for automatic CV generation.
+
+This API provides endpoints to:
+- Generate optimized CVs based on job descriptions
+- Extract CV data from PDF resumes
+- Fetch job descriptions from URLs
+- Render CVs to PDF format
 """
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, UploadFile, File, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl, Field
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import sys
 import os
 import json
-import uuid
-import shutil
-from datetime import datetime
+import tempfile
+from pathlib import Path
 
-# Add src directory to path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+# Import configuration settings first (before changing directory)
+sys.path.insert(0, os.path.dirname(__file__))
+from config import settings
 
-from data_loader import load_profile
-from job_parser import fetch_job_description
-from llm_agent import (
+# Add parent directory to path to import from src/
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+# Change working directory to project root for proper file access
+# (needed for prompts, templates, etc.)
+project_root = os.path.join(os.path.dirname(__file__), '..')
+os.chdir(project_root)
+
+from src.data_loader import load_profile
+from src.job_parser import fetch_job_description
+from src.llm_agent import (
     generate_optimized_profile_with_validation,
     extract_relevant_job_info,
     extract_cv_from_pdf_smart,
-    save_cv_to_json
 )
-from renderer import render_cv_pdf_html
+from src.renderer import render_cv_pdf_html, render_cover_letter_pdf
 
-# Initialize FastAPI app
+# Initialize FastAPI app with settings from config
 app = FastAPI(
-    title="Automatic CV Generator API",
-    description="AI-powered CV optimization and generation service",
-    version="1.0.0"
+    title=settings.API_TITLE,
+    description=settings.API_DESCRIPTION,
+    version=settings.API_VERSION,
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
-# CORS middleware for frontend integration
+# CORS middleware - configured from settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=settings.CORS_CREDENTIALS,
+    allow_methods=settings.CORS_METHODS,
+    allow_headers=settings.CORS_HEADERS,
 )
 
-# Create temp directories
-TEMP_DIR = os.path.join(os.path.dirname(__file__), '..', 'output', 'temp_api')
-os.makedirs(TEMP_DIR, exist_ok=True)
+# ============================================================================
+# Pydantic Models (Request/Response schemas)
+# ============================================================================
 
-# ==================== Pydantic Models ====================
+class PersonalInfo(BaseModel):
+    """Personal information schema"""
+    name: str
+    email: str
+    phone: str
+    nationality: Optional[str] = None
+    age: Optional[int] = None
+    linkedin: Optional[str] = None
+    github: Optional[str] = None
+    languages: Optional[List[str]] = None
 
-class JobURLRequest(BaseModel):
-    """Request model for job URL processing"""
-    job_url: HttpUrl = Field(..., description="URL of the job posting")
-    template: str = Field(default="tech", description="CV template: tech, business, or modern")
-    skip_validation: bool = Field(default=False, description="Skip CV validation")
-    max_retries: int = Field(default=2, ge=0, le=5, description="Max validation retries")
+class Education(BaseModel):
+    """Education entry schema"""
+    degree: str
+    institution: str
+    location: str
+    year: str
+    description: Optional[str] = None
+    grade: Optional[str] = None
 
-class JobTextRequest(BaseModel):
-    """Request model for direct job text processing"""
-    job_text: str = Field(..., description="Raw job description text")
-    template: str = Field(default="tech", description="CV template: tech, business, or modern")
-    skip_validation: bool = Field(default=False, description="Skip CV validation")
-    max_retries: int = Field(default=2, ge=0, le=5, description="Max validation retries")
+class Experience(BaseModel):
+    """Work experience entry schema"""
+    title: str
+    company: str
+    location: str
+    years: str
+    description: Optional[str] = None
+    descrition_list: Optional[List[str]] = None  # Note: keeping typo for compatibility
+    skills: Optional[List[str]] = None
+    reference: Optional[str] = None
+    reference_letter_url: Optional[str] = None
+
+class Project(BaseModel):
+    """Project entry schema"""
+    name: str
+    role: str
+    year: str
+    description: str
+    skills: Optional[List[str]] = None
+    url: Optional[str] = None
 
 class ProfileData(BaseModel):
-    """Request model for custom profile data"""
-    personal_info: dict
+    """Complete profile data schema"""
+    personal_info: PersonalInfo
     summary: str
-    education: List[dict]
-    experience: List[dict]
-    projects: List[dict]
-    skills: dict
+    education: List[Education]
+    experience: List[Experience]
+    projects: List[Project]
+    skills: List[str]
 
-class CVGenerationRequest(BaseModel):
-    """Request model for CV generation with custom profile"""
-    profile: ProfileData
-    job_text: str
-    template: str = Field(default="tech", description="CV template")
-    skip_validation: bool = Field(default=False)
-    max_retries: int = Field(default=2, ge=0, le=5)
+class JobDescriptionRequest(BaseModel):
+    """Request to fetch job description from URL"""
+    url: HttpUrl = Field(..., description="URL of the job posting")
 
-class StatusResponse(BaseModel):
-    """Response model for operation status"""
-    status: str
-    message: str
-    job_id: Optional[str] = None
-    data: Optional[dict] = None
+class GenerateCVRequest(BaseModel):
+    """Request to generate optimized CV"""
+    profile: ProfileData = Field(..., description="Candidate profile data")
+    job_description: str = Field(..., description="Job description text")
+    template: str = Field(default=settings.DEFAULT_TEMPLATE, description="Template type: tech, business, or modern")
+    skip_validation: bool = Field(default=False, description="Skip CV validation")
+    max_retries: int = Field(default=settings.MAX_RETRIES, description="Max validation retry attempts")
+    model_name: str = Field(default=settings.DEFAULT_MODEL, description="LLM model to use")
 
-# ==================== Helper Functions ====================
+class GenerateCVFromURLRequest(BaseModel):
+    """Request to generate CV from job URL"""
+    profile: ProfileData = Field(..., description="Candidate profile data")
+    job_url: HttpUrl = Field(..., description="URL of the job posting")
+    template: str = Field(default=settings.DEFAULT_TEMPLATE, description="Template type")
+    skip_validation: bool = Field(default=False, description="Skip CV validation")
+    max_retries: int = Field(default=settings.MAX_RETRIES, description="Max validation retry attempts")
+    model_name: str = Field(default=settings.DEFAULT_MODEL, description="LLM model to use")
 
-def cleanup_temp_file(file_path: str):
-    """Background task to cleanup temporary files"""
-    try:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            print(f"Cleaned up temp file: {file_path}")
-    except Exception as e:
-        print(f"Error cleaning up {file_path}: {e}")
+class CVResponse(BaseModel):
+    """Response containing optimized CV data"""
+    success: bool
+    profile: Dict[Any, Any]
+    message: Optional[str] = None
 
-def generate_job_id() -> str:
-    """Generate unique job ID"""
-    return f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+class JobInfoResponse(BaseModel):
+    """Response containing parsed job information"""
+    success: bool
+    job_info: Dict[Any, Any]
+    raw_text: Optional[str] = None
 
-def get_default_profile() -> dict:
-    """Load default profile from data/profile.json"""
-    profile_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'profile.json')
-    return load_profile(profile_path)
+# ============================================================================
+# Health Check Endpoint
+# ============================================================================
 
-# ==================== API Endpoints ====================
-
-@app.get("/")
+@app.get("/", tags=["Health"])
 async def root():
-    """Root endpoint with API information"""
+    """Root endpoint - API health check"""
     return {
+        "status": "online",
         "service": "Automatic CV Generator API",
         "version": "1.0.0",
-        "status": "operational",
-        "endpoints": {
-            "health": "/health",
-            "generate_from_url": "/api/v1/cv/generate/url",
-            "generate_from_text": "/api/v1/cv/generate/text",
-            "parse_resume": "/api/v1/cv/parse",
-            "extract_job_info": "/api/v1/job/extract"
-        }
+        "docs": "/docs"
     }
 
-@app.get("/health")
+@app.get("/health", tags=["Health"])
 async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
         "service": "cv-generator-api"
     }
 
-@app.post("/api/v1/cv/generate/url", response_class=FileResponse)
-async def generate_cv_from_url(
-    request: JobURLRequest,
-    background_tasks: BackgroundTasks
-):
+# ============================================================================
+# Job Description Endpoints
+# ============================================================================
+
+@app.post("/api/job/fetch", response_model=JobInfoResponse, tags=["Job Description"])
+async def fetch_job(request: JobDescriptionRequest):
     """
-    Generate optimized CV from job posting URL
+    Fetch and parse job description from URL.
     
-    Returns PDF file of the generated CV
+    This endpoint:
+    1. Scrapes the job posting from the provided URL
+    2. Extracts relevant job information using AI
+    3. Returns structured job data
     """
-    job_id = generate_job_id()
-    
     try:
-        print(f"[{job_id}] Starting CV generation from URL: {request.job_url}")
+        # Fetch raw job description
+        job_text = fetch_job_description(str(request.url))
         
-        # Fetch job description
-        print(f"[{job_id}] Fetching job description...")
-        job_text = fetch_job_description(str(request.job_url))
-        
-        # Extract job info
-        print(f"[{job_id}] Extracting job information...")
-        job_info = extract_relevant_job_info(job_text, "openai/gpt-4.1-mini")
-        
-        # Load default profile
-        print(f"[{job_id}] Loading candidate profile...")
-        profile = get_default_profile()
-        
-        # Generate optimized CV
-        print(f"[{job_id}] Generating optimized CV...")
-        if request.skip_validation:
-            from llm_agent import generate_optimized_profile
-            final_profile = generate_optimized_profile(profile, job_info, "openai/gpt-4.1-mini")
-        else:
-            final_profile = generate_optimized_profile_with_validation(
-                profile=profile,
-                job_info=job_info,
-                model_name="openai/gpt-4.1-mini",
-                max_retries=request.max_retries
+        if not job_text:
+            raise HTTPException(
+                status_code=400, 
+                detail="Failed to fetch job description from URL"
             )
         
-        # Render PDF
-        print(f"[{job_id}] Rendering PDF...")
-        output_path = os.path.join(TEMP_DIR, f"cv_{job_id}.pdf")
-        render_cv_pdf_html(final_profile, template=request.template, output_path=output_path)
+        # Extract structured job info
+        job_info = extract_relevant_job_info(job_text, settings.DEFAULT_MODEL)
         
-        # Schedule cleanup
-        background_tasks.add_task(cleanup_temp_file, output_path)
-        
-        print(f"[{job_id}] CV generation complete!")
-        
-        return FileResponse(
-            output_path,
-            media_type="application/pdf",
-            filename=f"CV_{job_info.get('company', 'optimized')}_{datetime.now().strftime('%Y%m%d')}.pdf"
+        return JobInfoResponse(
+            success=True,
+            job_info=job_info,
+            raw_text=job_text
         )
-        
+    
     except Exception as e:
-        print(f"[{job_id}] Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"CV generation failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error fetching job description: {str(e)}"
+        )
 
-@app.post("/api/v1/cv/generate/text", response_class=FileResponse)
-async def generate_cv_from_text(
-    request: JobTextRequest,
-    background_tasks: BackgroundTasks
-):
+@app.post("/api/job/parse", response_model=JobInfoResponse, tags=["Job Description"])
+async def parse_job_text(job_text: str = Query(..., description="Raw job description text")):
     """
-    Generate optimized CV from job description text
+    Parse raw job description text into structured format.
     
-    Returns PDF file of the generated CV
+    This endpoint takes raw job text and extracts structured information
+    like requirements, responsibilities, and key details.
     """
-    job_id = generate_job_id()
-    
     try:
-        print(f"[{job_id}] Starting CV generation from text")
+        job_info = extract_relevant_job_info(job_text, settings.DEFAULT_MODEL)
         
-        # Extract job info
-        print(f"[{job_id}] Extracting job information...")
-        job_info = extract_relevant_job_info(request.job_text, "openai/gpt-4.1-mini")
-        
-        # Load default profile
-        print(f"[{job_id}] Loading candidate profile...")
-        profile = get_default_profile()
-        
-        # Generate optimized CV
-        print(f"[{job_id}] Generating optimized CV...")
-        if request.skip_validation:
-            from llm_agent import generate_optimized_profile
-            final_profile = generate_optimized_profile(profile, job_info, "openai/gpt-4.1-mini")
-        else:
-            final_profile = generate_optimized_profile_with_validation(
-                profile=profile,
-                job_info=job_info,
-                model_name="openai/gpt-4.1-mini",
-                max_retries=request.max_retries
-            )
-        
-        # Render PDF
-        print(f"[{job_id}] Rendering PDF...")
-        output_path = os.path.join(TEMP_DIR, f"cv_{job_id}.pdf")
-        render_cv_pdf_html(final_profile, template=request.template, output_path=output_path)
-        
-        # Schedule cleanup
-        background_tasks.add_task(cleanup_temp_file, output_path)
-        
-        print(f"[{job_id}] CV generation complete!")
-        
-        return FileResponse(
-            output_path,
-            media_type="application/pdf",
-            filename=f"CV_optimized_{datetime.now().strftime('%Y%m%d')}.pdf"
+        return JobInfoResponse(
+            success=True,
+            job_info=job_info,
+            raw_text=job_text
         )
-        
+    
     except Exception as e:
-        print(f"[{job_id}] Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"CV generation failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error parsing job description: {str(e)}"
+        )
 
-@app.post("/api/v1/cv/parse", response_model=StatusResponse)
-async def parse_resume_pdf(
-    file: UploadFile = File(..., description="PDF resume file to parse"),
-    background_tasks: BackgroundTasks = None
+# ============================================================================
+# CV Extraction Endpoint
+# ============================================================================
+
+@app.post("/api/cv/extract", response_model=CVResponse, tags=["CV Extraction"])
+async def extract_cv_from_pdf(
+    file: UploadFile = File(..., description="PDF resume file"),
+    model_name: str = Query(default=settings.DEFAULT_MODEL, description="LLM model to use")
 ):
     """
-    Parse PDF resume and extract structured data
+    Extract CV data from uploaded PDF resume.
     
-    Returns JSON with extracted CV information
+    This endpoint:
+    1. Accepts a PDF resume upload
+    2. Extracts text and structure using AI
+    3. Returns structured CV data in JSON format
     """
-    job_id = generate_job_id()
-    
     # Validate file type
-    if not file.filename.endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported")
-    
-    temp_pdf_path = os.path.join(TEMP_DIR, f"upload_{job_id}.pdf")
-    
-    try:
-        print(f"[{job_id}] Parsing uploaded resume: {file.filename}")
-        
-        # Save uploaded file
-        with open(temp_pdf_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        
-        # Extract CV data
-        print(f"[{job_id}] Extracting CV data...")
-        cv_data = extract_cv_from_pdf_smart(temp_pdf_path, "openai/gpt-4.1-mini")
-        
-        # Cleanup
-        if background_tasks:
-            background_tasks.add_task(cleanup_temp_file, temp_pdf_path)
-        else:
-            os.remove(temp_pdf_path)
-        
-        print(f"[{job_id}] Resume parsing complete!")
-        
-        return StatusResponse(
-            status="success",
-            message="Resume parsed successfully",
-            job_id=job_id,
-            data=cv_data
-        )
-        
-    except Exception as e:
-        # Cleanup on error
-        if os.path.exists(temp_pdf_path):
-            os.remove(temp_pdf_path)
-        print(f"[{job_id}] Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Resume parsing failed: {str(e)}")
-
-@app.post("/api/v1/job/extract", response_model=StatusResponse)
-async def extract_job_information(
-    job_url: Optional[str] = None,
-    job_text: Optional[str] = None
-):
-    """
-    Extract structured information from job posting
-    
-    Provide either job_url or job_text
-    """
-    job_id = generate_job_id()
-    
-    if not job_url and not job_text:
+    file_extension = os.path.splitext(file.filename)[1].lower()
+    if file_extension not in settings.ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=400,
-            detail="Either job_url or job_text must be provided"
+            detail=f"Only {', '.join(settings.ALLOWED_EXTENSIONS)} files are supported"
         )
     
     try:
-        print(f"[{job_id}] Extracting job information...")
+        # Save uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+            content = await file.read()
+            tmp_file.write(content)
+            tmp_path = tmp_file.name
         
-        # Fetch job text if URL provided
-        if job_url:
-            print(f"[{job_id}] Fetching from URL: {job_url}")
-            job_text = fetch_job_description(job_url)
+        # Extract CV data
+        cv_data = extract_cv_from_pdf_smart(tmp_path, model_name)
         
-        # Extract job info
-        job_info = extract_relevant_job_info(job_text, "openai/gpt-4.1-mini")
+        # Clean up temp file
+        os.unlink(tmp_path)
         
-        print(f"[{job_id}] Job extraction complete!")
-        
-        return StatusResponse(
-            status="success",
-            message="Job information extracted successfully",
-            job_id=job_id,
-            data=job_info
+        return CVResponse(
+            success=True,
+            profile=cv_data,
+            message="CV successfully extracted from PDF"
         )
-        
+    
     except Exception as e:
-        print(f"[{job_id}] Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Job extraction failed: {str(e)}")
+        # Clean up temp file on error
+        if 'tmp_path' in locals() and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error extracting CV from PDF: {str(e)}"
+        )
 
-@app.post("/api/v1/cv/generate/custom", response_class=FileResponse)
-async def generate_cv_with_custom_profile(
-    request: CVGenerationRequest,
-    background_tasks: BackgroundTasks
-):
+# ============================================================================
+# CV Generation Endpoints
+# ============================================================================
+
+@app.post("/api/cv/generate", response_model=CVResponse, tags=["CV Generation"])
+async def generate_cv(request: GenerateCVRequest):
     """
-    Generate CV with custom profile data
+    Generate optimized CV based on job description.
     
-    Allows full control over profile information
+    This endpoint:
+    1. Takes your profile and a job description
+    2. Optimizes your CV using AI to match the job requirements
+    3. Validates the output (unless skip_validation is True)
+    4. Returns the optimized CV data
     """
-    job_id = generate_job_id()
-    
     try:
-        print(f"[{job_id}] Starting CV generation with custom profile")
+        # Convert Pydantic models to dict
+        profile_dict = request.profile.model_dump()
         
-        # Convert Pydantic model to dict
-        profile = request.profile.dict()
+        # Parse job description to extract structured info
+        job_info = extract_relevant_job_info(
+            request.job_description, 
+            request.model_name
+        )
         
-        # Extract job info
-        print(f"[{job_id}] Extracting job information...")
-        job_info = extract_relevant_job_info(request.job_text, "openai/gpt-4.1-mini")
-        
-        # Generate optimized CV
-        print(f"[{job_id}] Generating optimized CV...")
+        # Generate optimized profile
         if request.skip_validation:
-            from llm_agent import generate_optimized_profile
-            final_profile = generate_optimized_profile(profile, job_info, "openai/gpt-4.1-mini")
+            from src.llm_agent import generate_optimized_profile
+            optimized_profile = generate_optimized_profile(
+                profile_dict, 
+                job_info, 
+                request.model_name
+            )
         else:
-            final_profile = generate_optimized_profile_with_validation(
-                profile=profile,
+            optimized_profile = generate_optimized_profile_with_validation(
+                profile=profile_dict,
                 job_info=job_info,
-                model_name="openai/gpt-4.1-mini",
+                model_name=request.model_name,
                 max_retries=request.max_retries
             )
         
+        return CVResponse(
+            success=True,
+            profile=optimized_profile,
+            message="CV successfully generated and optimized"
+        )
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating CV: {str(e)}"
+        )
+
+@app.post("/api/cv/generate-from-url", response_model=CVResponse, tags=["CV Generation"])
+async def generate_cv_from_url(request: GenerateCVFromURLRequest):
+    """
+    Generate optimized CV from job posting URL.
+    
+    This is a convenience endpoint that combines:
+    1. Fetching the job description from URL
+    2. Parsing the job requirements
+    3. Generating an optimized CV
+    
+    All in one API call.
+    """
+    try:
+        # Fetch job description
+        job_text = fetch_job_description(str(request.job_url))
+        
+        if not job_text:
+            raise HTTPException(
+                status_code=400,
+                detail="Failed to fetch job description from URL"
+            )
+        
+        # Convert profile to dict
+        profile_dict = request.profile.model_dump()
+        
+        # Extract job info
+        job_info = extract_relevant_job_info(job_text, request.model_name)
+        
+        # Generate optimized profile
+        if request.skip_validation:
+            from src.llm_agent import generate_optimized_profile
+            optimized_profile = generate_optimized_profile(
+                profile_dict,
+                job_info,
+                request.model_name
+            )
+        else:
+            optimized_profile = generate_optimized_profile_with_validation(
+                profile=profile_dict,
+                job_info=job_info,
+                model_name=request.model_name,
+                max_retries=request.max_retries
+            )
+        
+        return CVResponse(
+            success=True,
+            profile=optimized_profile,
+            message="CV successfully generated from job URL"
+        )
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating CV from URL: {str(e)}"
+        )
+
+# ============================================================================
+# CV Rendering Endpoints
+# ============================================================================
+
+@app.post("/api/cv/render", tags=["CV Rendering"])
+async def render_cv(
+    profile: ProfileData,
+    template: str = Query(default=settings.DEFAULT_TEMPLATE, description="Template: tech, business, or modern"),
+    output_filename: str = Query(default="cv_output.pdf", description="Output PDF filename")
+):
+    """
+    Render CV to PDF format.
+    
+    Takes structured CV data and renders it to a beautiful PDF using
+    the specified template (tech, business, or modern).
+    
+    Returns the PDF file for download.
+    """
+    try:
+        # Validate template
+        if template not in settings.AVAILABLE_TEMPLATES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid template. Available templates: {', '.join(settings.AVAILABLE_TEMPLATES)}"
+            )
+        
+        # Convert to dict
+        profile_dict = profile.model_dump()
+        
+        # Create output directory if it doesn't exist
+        output_dir = Path(settings.OUTPUT_DIR)
+        output_dir.mkdir(exist_ok=True)
+        
+        output_path = output_dir / output_filename
+        
         # Render PDF
-        print(f"[{job_id}] Rendering PDF...")
-        output_path = os.path.join(TEMP_DIR, f"cv_{job_id}.pdf")
-        render_cv_pdf_html(final_profile, template=request.template, output_path=output_path)
+        render_cv_pdf_html(profile_dict, template=template, output_path=str(output_path))
         
-        # Schedule cleanup
-        background_tasks.add_task(cleanup_temp_file, output_path)
-        
-        print(f"[{job_id}] CV generation complete!")
+        # Return PDF file
+        if not output_path.exists():
+            raise HTTPException(
+                status_code=500,
+                detail="PDF generation failed"
+            )
         
         return FileResponse(
-            output_path,
+            path=str(output_path),
             media_type="application/pdf",
-            filename=f"CV_custom_{datetime.now().strftime('%Y%m%d')}.pdf"
+            filename=output_filename
         )
-        
+    
     except Exception as e:
-        print(f"[{job_id}] Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"CV generation failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error rendering CV: {str(e)}"
+        )
 
-# ==================== Error Handlers ====================
-
-@app.exception_handler(404)
-async def not_found_handler(request, exc):
-    """Custom 404 handler"""
-    return JSONResponse(
-        status_code=404,
-        content={
-            "status": "error",
-            "message": "Endpoint not found",
-            "path": str(request.url)
-        }
-    )
-
-@app.exception_handler(500)
-async def internal_error_handler(request, exc):
-    """Custom 500 handler"""
-    return JSONResponse(
-        status_code=500,
-        content={
-            "status": "error",
-            "message": "Internal server error",
-            "detail": str(exc)
-        }
-    )
-
-# ==================== Main ====================
+# ============================================================================
+# Main Entry Point
+# ============================================================================
 
 if __name__ == "__main__":
     import uvicorn
+    
+    # Run the API server with settings from config
     uvicorn.run(
         "app:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=settings.RELOAD  # Auto-reload on code changes (disable in production)
     )
