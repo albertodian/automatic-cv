@@ -5,7 +5,8 @@ nixPkgs = ["python310", "python310Packages.pip", "python310Packages.virtualenv",
 cmds = [
   "python -m venv /opt/venv",
   ". /opt/venv/bin/activate && pip install --upgrade pip setuptools wheel",
-  ". /opt/venv/bin/activate && pip install -r requirements.txt"
+  ". /opt/venv/bin/activate && pip install -r requirements.txt",
+  ". /opt/venv/bin/activate && playwright install --with-deps chromium"
 ]
 
 [start]

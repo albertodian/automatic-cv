@@ -25,5 +25,6 @@ weasyprint>=60.0
 cairocffi>=1.6.0
 cffi>=1.16.0
 
-# Web scraping (lightweight)
+# Web scraping
 lxml>=4.9.0
+playwright>=1.40.0
