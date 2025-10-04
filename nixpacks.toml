@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["python310", "python310Packages.pip", "python310Packages.virtualenv", "cairo", "pango", "gdk-pixbuf", "libffi", "gobject-introspection"]
+nixPkgs = ["python310", "python310Packages.pip", "python310Packages.virtualenv", "cairo", "pango", "gdk-pixbuf", "libffi", "gobject-introspection", "tesseract"]
 
 [phases.install]
 cmds = [

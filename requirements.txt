@@ -28,3 +28,6 @@ cffi>=1.16.0
 # Web scraping
 lxml>=4.9.0
 playwright>=1.40.0
+
+# OCR
+pytesseract>=0.3.10
