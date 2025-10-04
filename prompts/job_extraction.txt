@@ -1,0 +1,30 @@
+ROLE: Job posting parser for ATS optimization
+
+TASK: Extract structured data from job posting
+
+REQUIREMENTS:
+1. Parse into structured JSON
+2. Translate ALL to English
+3. Write concise 2-3 sentence summary
+4. Remove duplicate keywords
+5. Sort keywords alphabetically
+
+INPUT:
+{job_text}
+
+OUTPUT FORMAT:
+{
+  "title": "",
+  "company": "",
+  "location": "",
+  "summary": "",
+  "requirements": [],
+  "responsibilities": [],
+  "keywords": []
+}
+
+RULES:
+- All English
+- No duplicates
+- No extra text
+- Valid JSON only

@@ -5,16 +5,25 @@ __pycache__/
 *.out
 *.tex
 output/
-data/
 .vscode/
 .env
-prompts/
-*.txt
+.env.local
+
+# Generated PDFs
+*.pdf
+test_cv_output.pdf
 
 # API specific
 output/temp_api/
-*.pdf
-test_cv_output.pdf
+
+# Data files (but keep example/template files)
+data/*.pdf
+data/job_description.txt
+data/profile_fetched.json
+
+# But keep the templates and prompts for Vercel deployment
+# prompts/ - KEEP THIS
+# templates/ - KEEP THIS
 
 # Virtual environment
 venv/

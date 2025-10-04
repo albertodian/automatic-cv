@@ -2,6 +2,8 @@
 
 An intelligent **AI-powered CV optimization and generation system** that automatically creates tailored, ATS-friendly CVs for any job posting. Available as both a **CLI tool** and a **REST API** for easy integration.
 
+> **🚂 Now optimized for Railway deployment** - No timeout limits, perfect for LLM + PDF processing!
+
 ## ✨ Key Features
 
 ### 🤖 AI-Powered Optimization
@@ -21,8 +23,8 @@ An intelligent **AI-powered CV optimization and generation system** that automat
 - **Modern Template** – Timeline-style with blue accents for creative roles
 
 ### 🌐 REST API
-- **Production-ready FastAPI** server with comprehensive endpoints
-- **Easy deployment** – Docker, Heroku, Railway, AWS, GCP, Azure support
+- **Production-ready FastAPI** server with 8 comprehensive endpoints
+- **Railway deployment** – No timeout limits, perfect for LLM + PDF processing
 - **File upload support** – Parse existing resumes via API
 - **Background processing** – Automatic cleanup of temporary files
 
@@ -215,32 +217,51 @@ See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for complete API reference.
 
 ---
 
-## 🐳 Docker Deployment
+## ☁️ Cloud Deployment
 
-### Quick Deploy with Docker Compose
+### 🚂 Deploy to Railway (Recommended)
+
+**Railway is perfect for this app** - no timeout limits, no cold starts, $5/month:
 
 ```bash
-# Create .env file with your API token
+# Quick Deploy (3 minutes)
+# 1. Go to https://railway.app/new
+# 2. Select your GitHub repo
+# 3. Add environment variable: REPLICATE_API_TOKEN
+# 4. Your API is live!
+
+# OR via Railway CLI
+npm install -g @railway/cli
+railway login
+railway init
+railway variables set REPLICATE_API_TOKEN=your_token
+railway up
+```
+
+Your API will be live at: `https://your-app.up.railway.app`
+
+✅ **Why Railway?**
+- ∞ Unlimited timeout (Vercel has 60s limit)
+- No cold starts (always fast)
+- Better for PDF/LLM processing (60-150s)
+- $5/month flat rate
+
+📚 **Complete guide:** [RAILWAY_DEPLOYMENT.md](RAILWAY_DEPLOYMENT.md) - Everything in one file!
+
+### Alternative: Docker (Self-Hosted)
+
+```bash
+# Create .env file
 echo "REPLICATE_API_TOKEN=your_token_here" > .env
 
-# Start the service
+# Start service
 docker-compose up -d
 
 # View logs
 docker-compose logs -f
-
-# Stop the service
-docker-compose down
 ```
 
-### Manual Docker Build
-
-```bash
-docker build -t cv-generator-api .
-docker run -d -p 8000:8000 -e REPLICATE_API_TOKEN=your_token cv-generator-api
-```
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for production deployment guides.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for other options (AWS, GCP, Azure).
 
 ---
 

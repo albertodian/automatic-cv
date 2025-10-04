@@ -1,0 +1,48 @@
+# Railway ignore file - exclude from deployment
+
+# Development files
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Testing
+tests/
+*.pytest_cache/
+.coverage
+
+# Local data
+data/*.pdf
+data/*.json
+output/
+*.log
+
+# Documentation (optional - keep if you want)
+docs/
+*.md
+!README.md
+
+# Vercel files (not needed for Railway)
+vercel.json
+.vercelignore
+api/
+
+# OS files
+.DS_Store
+Thumbs.db
