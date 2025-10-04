@@ -22,6 +22,10 @@ nixPkgs = [
   "gcc"
 ]
 
+[phases.setup.nixEnv]
+LD_LIBRARY_PATH = "/nix/store/*-glib-*/lib:/nix/store/*-cairo-*/lib:/nix/store/*-pango-*/lib:/nix/store/*-gdk-pixbuf-*/lib:/nix/store/*-gobject-introspection-*/lib:$LD_LIBRARY_PATH"
+GI_TYPELIB_PATH = "/nix/store/*-gobject-introspection-*/lib/girepository-1.0"
+
 [phases.install]
 cmds = [
   "python -m venv /opt/venv",
