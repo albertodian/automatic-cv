@@ -5,8 +5,7 @@ nixPkgs = [
   "python310Packages.virtualenv",
   # PDF rendering (weasyprint complete dependencies)
   "cairo",
-  "pango", 
-  "pangocairo",
+  "pango",
   "gdk-pixbuf",
   "glib",
   "harfbuzz",
