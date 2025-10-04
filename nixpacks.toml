@@ -1,5 +1,27 @@
 [phases.setup]
-nixPkgs = ["python310", "python310Packages.pip", "python310Packages.virtualenv", "cairo", "pango", "gdk-pixbuf", "libffi", "gobject-introspection", "glib", "tesseract", "poppler_utils"]
+nixPkgs = [
+  "python310",
+  "python310Packages.pip", 
+  "python310Packages.virtualenv",
+  # PDF rendering (weasyprint complete dependencies)
+  "cairo",
+  "pango", 
+  "pangocairo",
+  "gdk-pixbuf",
+  "glib",
+  "harfbuzz",
+  "fontconfig",
+  "freetype",
+  "libffi",
+  "gobject-introspection",
+  # OCR
+  "tesseract",
+  # PDF tools
+  "poppler_utils",
+  # Build tools
+  "pkg-config",
+  "gcc"
+]
 
 [phases.install]
 cmds = [
