@@ -41,4 +41,4 @@ COPY . .
 EXPOSE 8080
 
 # Start command
-CMD cd app && uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080}
+CMD ["sh", "-c", "cd app && uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080}"]
