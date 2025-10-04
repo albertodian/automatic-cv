@@ -4,7 +4,15 @@ import subprocess
 import os
 
 
-def render_cv_pdf_html(profile, template, output_pdf="output/cv_output.pdf"):
+def render_cv_pdf_html(profile, template, output_path="output/cv_output.pdf"):
+    """
+    Render CV to PDF using HTML template
+    
+    Args:
+        profile: Profile data dictionary
+        template: Template name ('tech', 'business', or 'modern')
+        output_path: Output PDF file path (default: output/cv_output.pdf)
+    """
     
     if template == "tech":
         template_path = "templates/cv_template_tech.html"
@@ -19,17 +27,20 @@ def render_cv_pdf_html(profile, template, output_pdf="output/cv_output.pdf"):
     with open(template_path, "r", encoding="utf-8") as f:
         template_content = f.read()
 
-    template = Template(template_content)
-    rendered_html = template.render(**profile)
+    jinja_template = Template(template_content)
+    rendered_html = jinja_template.render(**profile)
 
     # Write HTML for debugging
-    # html_file = output_pdf.replace(".pdf", ".html")
+    # html_file = output_path.replace(".pdf", ".html")
     # with open(html_file, "w", encoding="utf-8") as f:
     #     f.write(rendered_html)
 
+    # Ensure output directory exists
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+    
     # Convert to PDF
-    HTML(string=rendered_html).write_pdf(output_pdf)
-    print(f"CV generated: {output_pdf}")
+    HTML(string=rendered_html).write_pdf(output_path)
+    print(f"CV generated: {output_path}")
 
 def render_cv_pdf_latex(profile: dict,
                   template: str,

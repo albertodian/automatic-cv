@@ -9,6 +9,12 @@ requests
 scrapy
 scrapy-playwright
 
+# FastAPI for REST API
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6  # For file uploads
+pydantic-settings>=2.0.0  # For settings management
+
 # PDF extraction - Basic (install at least one)
 PyPDF2>=3.0.0
 pdfplumber>=0.10.0
