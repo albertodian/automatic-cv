@@ -3,7 +3,6 @@ from data_loader import load_profile
 from job_parser import fetch_job_description
 from llm_agent import (
     generate_optimized_profile_with_validation,
-    generate_cover_letter, 
     extract_relevant_job_info, 
     extract_cv_from_pdf_smart, 
     save_cv_to_json

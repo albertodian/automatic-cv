@@ -8,3 +8,5 @@ output/
 data/
 .vscode/
 .env
+prompts/
+*.txt
