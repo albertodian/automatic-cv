@@ -22,17 +22,16 @@ nixPkgs = [
   "gcc"
 ]
 
-[phases.setup.nixEnv]
-LD_LIBRARY_PATH = "/nix/store/*-glib-*/lib:/nix/store/*-cairo-*/lib:/nix/store/*-pango-*/lib:/nix/store/*-gdk-pixbuf-*/lib:/nix/store/*-gobject-introspection-*/lib:$LD_LIBRARY_PATH"
-GI_TYPELIB_PATH = "/nix/store/*-gobject-introspection-*/lib/girepository-1.0"
-
 [phases.install]
 cmds = [
   "python -m venv /opt/venv",
   ". /opt/venv/bin/activate && pip install --upgrade pip setuptools wheel",
   ". /opt/venv/bin/activate && pip install -r requirements.txt",
-  ". /opt/venv/bin/activate && playwright install --with-deps chromium"
+  ". /opt/venv/bin/activate && playwright install --with-deps chromium",
+  # Create library path setup script
+  "echo 'export LD_LIBRARY_PATH=$(find /nix/store -maxdepth 1 -name \"*-glib-*\" -o -name \"*-cairo-*\" -o -name \"*-pango-*\" -o -name \"*-gdk-pixbuf-*\" | xargs -I {} echo {}/lib | tr \"\\n\" \":\" | sed \"s/:$/\"/):$LD_LIBRARY_PATH' > /opt/venv/setup_libs.sh",
+  "chmod +x /opt/venv/setup_libs.sh"
 ]
 
 [start]
-cmd = ". /opt/venv/bin/activate && cd app && uvicorn app:app --host 0.0.0.0 --port $PORT"
+cmd = ". /opt/venv/setup_libs.sh && . /opt/venv/bin/activate && cd app && uvicorn app:app --host 0.0.0.0 --port $PORT"
