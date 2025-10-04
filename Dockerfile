@@ -37,12 +37,11 @@ RUN playwright install --with-deps chromium
 # Copy application code
 COPY . .
 
-# Copy and make start script executable
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
-
 # Expose port
 EXPOSE 8080
 
-# Start command
-CMD ["/start.sh"]
+# Set working directory to app folder
+WORKDIR /app/app
+
+# Start command - shell form allows environment variable expansion
+CMD uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080}
