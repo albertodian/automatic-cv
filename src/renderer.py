@@ -4,7 +4,7 @@ import subprocess
 import os
 
 
-def render_cv_pdf_html(profile, template, output_path="output/cv_output.pdf"):
+def render_cv_pdf_html(profile, template, output_path="output/cv_output.pdf", output_filename=None):
     """
     Render CV to PDF using HTML template
     
@@ -12,7 +12,12 @@ def render_cv_pdf_html(profile, template, output_path="output/cv_output.pdf"):
         profile: Profile data dictionary
         template: Template name ('tech', 'business', or 'modern')
         output_path: Output PDF file path (default: output/cv_output.pdf)
+        output_filename: Optional filename to use (overrides output_path)
     """
+    
+    # If output_filename provided, use it
+    if output_filename:
+        output_path = os.path.join("output", output_filename)
     
     if template == "tech":
         template_path = "templates/cv_template_tech.html"
@@ -23,7 +28,6 @@ def render_cv_pdf_html(profile, template, output_path="output/cv_output.pdf"):
     else:
         raise ValueError("Invalid template type. Choose 'tech', 'business', or 'modern'.")
 
-    
     with open(template_path, "r", encoding="utf-8") as f:
         template_content = f.read()
 

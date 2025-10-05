@@ -244,6 +244,33 @@ def generate_optimized_profile(profile: dict, job_info: dict, model_name: str) -
     return json.loads(content)
 
 
+
+
+
+def optimize_cv_with_rag(profile: Dict[str, Any], job_info: Dict[str, Any], model_name: str) -> Dict[str, Any]:
+    """
+    Generate optimized CV using RAG-enhanced prompt.
+    This function expects pre-filtered content from the RAG system.
+    """
+    # Check if RAG-specific prompt exists, otherwise fall back to standard
+    try:
+        prompt_template = load_prompt("cv_optimization_rag")
+    except FileNotFoundError:
+        print("⚠️ RAG prompt not found, using standard prompt")
+        prompt_template = load_prompt("cv_optimization")
+    
+    prompt = prompt_template.format(
+        profile=json.dumps(profile, indent=2, ensure_ascii=False),
+        job_info=json.dumps(job_info, indent=2, ensure_ascii=False)
+    )
+    
+    output = replicate.run(model_name, input={"prompt": prompt})
+    content = "".join([str(x) for x in output]).strip()
+    content = _clean_json(content)
+    
+    return json.loads(content)
+
+
 def extract_relevant_job_info(job_raw_text: str, model_name: str) -> dict:
     """Extract job posting info."""
     clean_text = re.sub(r'\s+', ' ', job_raw_text).strip()

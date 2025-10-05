@@ -36,4 +36,71 @@ DO NOT INVENT:
 INPUT:
 {cv_text}
 
-OUTPUT: JSON only, no markdown, use "descrition_list" (keep typo)
+🚨 CRITICAL OUTPUT STRUCTURE 🚨
+
+YOU MUST USE THESE EXACT FIELD NAMES:
+
+{{
+  "personal_info": {{
+    "name": "Full Name",
+    "email": "email@example.com",
+    "phone": "+1234567890",
+    "languages": ["Language1", "Language2"]
+  }},
+  "summary": "1-2 sentences",
+  
+  "experience": [                           ← MUST BE "experience" NOT "work_experience"!
+    {{
+      "title": "Job Title",                ← MUST BE "title" NOT "job_title"!
+      "company": "Company Name",
+      "location": "City, Country",
+      "years": "Apr 2023 - Jun 2023",      ← MUST BE "years" NOT "date"!
+      "descrition_list": [                 ← MUST BE "descrition_list" (yes, typo!)
+        "Bullet 1",
+        "Bullet 2"
+      ]
+    }}
+  ],
+  
+  "projects": [
+    {{
+      "name": "Project Name",              ← MUST BE "name" NOT "project_name"!
+      "year": "Feb 2024 - Jun 2024",      ← MUST BE "year" (singular) NOT "date"!
+      "description": "Single text description of the project"  ← MUST BE "description" (STRING, no typo!)
+    }}
+  ],
+  
+  "education": [
+    {{
+      "degree": "Degree Name",
+      "institution": "University Name",
+      "location": "City, Country",
+      "year": "Sep 2020 - Jul 2023",      ← MUST BE "year" NOT "date"!
+      "description": "Single text description of the Degree specifics"
+    }}
+  ],
+  
+  "skills": [                              ← MUST BE flat array NOT nested object!
+    "Python",
+    "JavaScript",
+    "Machine Learning"
+  ]
+}}
+
+❌ WRONG FIELD NAMES:
+- work_experience (use "experience")
+- job_title (use "title")
+- project_name (use "name")
+- date (use "years" for experience, "year" for projects/education)
+- Nested skills object (use flat array)
+
+✅ CORRECT FIELD NAMES:
+- experience[].title
+- experience[].years (plural)
+- projects[].name
+- projects[].year (singular)
+- education[].year (singular)
+- descrition_list (typo required!)
+- skills: ["flat", "array"]
+
+OUTPUT: Pure JSON only, no ```json markers, no commentary

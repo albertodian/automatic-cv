@@ -70,3 +70,21 @@ JOB POSTING:
 {job_info}
 
 OUTPUT: Valid JSON only, no markdown, no commentary
+
+CRITICAL OUTPUT FORMAT:
+❌ WRONG - Do NOT do this:
+```json
+{{"personal_info": ...}}
+```
+Here is your CV...
+
+✅ CORRECT - Output this way:
+{{"personal_info": ...}}
+
+Rules:
+- Start immediately with {{
+- End immediately with }}
+- NO ```json or ``` markers
+- NO explanatory text
+- NO comments
+- Pure JSON only
