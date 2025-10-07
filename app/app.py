@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 project_root = os.path.join(os.path.dirname(__file__), '..')
 os.chdir(project_root)
 
-from utils import load_profile
+from src.utils import load_profile
 from src.job_parser import fetch_job_description
 from src.llm_agent import (
     generate_optimized_profile,
@@ -135,6 +135,24 @@ class GenerateCVRequest(BaseModel):
 class GenerateCVFromURLRequest(BaseModel):
     """Request to generate CV from job URL"""
     profile: ProfileData = Field(..., description="Candidate profile data")
+    job_url: HttpUrl = Field(..., description="URL of the job posting")
+    template: str = Field(default=settings.DEFAULT_TEMPLATE, description="Template type")
+    skip_validation: bool = Field(default=False, description="Skip CV validation")
+    max_retries: int = Field(default=settings.MAX_RETRIES, description="Max validation retry attempts")
+    model_name: str = Field(default=settings.DEFAULT_MODEL, description="LLM model to use")
+
+class GenerateCVFromFileRequest(BaseModel):
+    """Request to generate CV from profile file"""
+    profile_path: str = Field(default="data/profile.json", description="Path to profile JSON file")
+    job_description: str = Field(..., description="Job description text")
+    template: str = Field(default=settings.DEFAULT_TEMPLATE, description="Template type")
+    skip_validation: bool = Field(default=False, description="Skip CV validation")
+    max_retries: int = Field(default=settings.MAX_RETRIES, description="Max validation retry attempts")
+    model_name: str = Field(default=settings.DEFAULT_MODEL, description="LLM model to use")
+
+class GenerateCVFromFileURLRequest(BaseModel):
+    """Request to generate CV from profile file and job URL"""
+    profile_path: str = Field(default="data/profile.json", description="Path to profile JSON file")
     job_url: HttpUrl = Field(..., description="URL of the job posting")
     template: str = Field(default=settings.DEFAULT_TEMPLATE, description="Template type")
     skip_validation: bool = Field(default=False, description="Skip CV validation")
@@ -306,7 +324,7 @@ async def generate_cv(request: GenerateCVRequest):
     3. Optimizes your CV using AI to match the job requirements
     4. Validates the output 
     5. Applies ATS optimization
-    6. Returns the optimized CV data (JSON format).
+    6. Returns the optimized CV data (JSON format). 
     """
     try:
         profile_dict = request.profile.model_dump()
@@ -749,6 +767,158 @@ async def generate_cv_json_from_url(request: GenerateCVFromURLRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Error generating CV from URL: {str(e)}"
+        )
+
+# ============================================================================
+# CV Generation from File Endpoints
+# ============================================================================
+
+@app.post("/api/cv/generate-from-file", response_model=CVResponse, tags=["CV Generation"])
+async def generate_cv_from_file(request: GenerateCVFromFileRequest):
+    """
+    Generate optimized CV from profile file and job description.
+    
+    This endpoint loads the profile from a JSON file on the server,
+    then generates an optimized CV using RAG.
+    
+    Complete pipeline:
+    1. Load profile from file
+    2. Parse job description
+    3. Use RAG to retrieve relevant content
+    4. Generate optimized CV with LLM
+    5. Validate structure
+    6. Apply ATS optimization
+    7. Return final JSON
+    """
+    try:
+        profile_dict = load_profile(request.profile_path)
+        
+        job_info = extract_relevant_job_info(
+            request.job_description, 
+            request.model_name
+        )
+        
+        rag_system = CVRAGSystem()
+        rag_system.reset_database()
+        rag_system.index_profile(profile_dict)
+        
+        rag_generator = RAGEnhancedGenerator(rag_system)
+        
+        optimized_profile = rag_generator.generate_optimized_profile_with_rag(
+            profile=profile_dict,
+            job_info=job_info,
+            llm_function=generate_optimized_profile,
+            model_name=request.model_name
+        )
+        
+        if not request.skip_validation:
+            optimized_profile, fix_messages = fix_cv(
+                profile=optimized_profile,
+                original_profile=profile_dict,
+                auto_fix=True
+            )
+        
+        optimized_profile, ats_result, iterations = refine_cv_for_ats(
+            profile=optimized_profile,
+            job_keywords=job_info.get('keywords', []),
+            model_name=request.model_name,
+            max_iterations=3,
+            target_score=90.0,
+            min_improvement=5.0
+        )
+        
+        return CVResponse(
+            success=True,
+            profile=optimized_profile,
+            message=f"CV successfully generated from file! ATS Score: {ats_result['score']:.1f}% (Iterations: {iterations})"
+        )
+    
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Profile file not found: {request.profile_path}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating CV: {str(e)}"
+        )
+
+@app.post("/api/cv/generate-from-file-url", response_model=CVResponse, tags=["CV Generation"])
+async def generate_cv_from_file_url(request: GenerateCVFromFileURLRequest):
+    """
+    Generate optimized CV from profile file and job URL.
+    
+    This endpoint loads the profile from a JSON file on the server,
+    fetches the job from a URL, then generates an optimized CV using RAG.
+    
+    Complete pipeline:
+    1. Load profile from file
+    2. Fetch job description from URL
+    3. Parse job requirements
+    4. Use RAG to retrieve relevant content
+    5. Generate optimized CV with LLM
+    6. Validate structure
+    7. Apply ATS optimization
+    8. Return final JSON
+    """
+    try:
+        profile_dict = load_profile(request.profile_path)
+        
+        job_text = fetch_job_description(str(request.job_url))
+        
+        if not job_text:
+            raise HTTPException(
+                status_code=400,
+                detail="Failed to fetch job description from URL"
+            )
+        
+        job_info = extract_relevant_job_info(job_text, request.model_name)
+        
+        rag_system = CVRAGSystem()
+        rag_system.reset_database()
+        rag_system.index_profile(profile_dict)
+        
+        rag_generator = RAGEnhancedGenerator(rag_system)
+        
+        optimized_profile = rag_generator.generate_optimized_profile_with_rag(
+            profile=profile_dict,
+            job_info=job_info,
+            llm_function=generate_optimized_profile,
+            model_name=request.model_name
+        )
+        
+        if not request.skip_validation:
+            optimized_profile, fix_messages = fix_cv(
+                profile=optimized_profile,
+                original_profile=profile_dict,
+                auto_fix=True
+            )
+        
+        optimized_profile, ats_result, iterations = refine_cv_for_ats(
+            profile=optimized_profile,
+            job_keywords=job_info.get('keywords', []),
+            model_name=request.model_name,
+            max_iterations=3,
+            target_score=90.0,
+            min_improvement=5.0
+        )
+        
+        return CVResponse(
+            success=True,
+            profile=optimized_profile,
+            message=f"CV successfully generated from file and URL! ATS Score: {ats_result['score']:.1f}% (Iterations: {iterations})"
+        )
+    
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Profile file not found: {request.profile_path}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating CV from file and URL: {str(e)}"
         )
 
 # ============================================================================
