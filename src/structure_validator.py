@@ -394,7 +394,7 @@ def _validate_data_quality(profile: Dict[str, Any]) -> List[CVValidationIssue]:
     return issues
 
 
-def _check_empty_fields(profile: Dict[str, Any]) -> List[str]:
+def _check_personal_info_fields(profile: Dict[str, Any]) -> List[str]:
     """
     Check which optional personal info fields are empty or missing.
     
@@ -408,9 +408,6 @@ def _check_empty_fields(profile: Dict[str, Any]) -> List[str]:
     """
     empty_fields = []
     personal_info = profile.get('personal_info', {})
-    experience_info = profile.get('experience', [])
-    education_info = profile.get('education', [])
-    projects_info = profile.get('projects', [])
     
     # Optional fields that can be filled via UI
     optional_fields = [
@@ -418,12 +415,6 @@ def _check_empty_fields(profile: Dict[str, Any]) -> List[str]:
         'age',
         'linkedin',
         'github'
-        'languages',
-        'reference',
-        'phone',
-        'reference_letter_url',
-        'grade',
-        'url'
     ]
     
     for field in optional_fields:
@@ -431,25 +422,7 @@ def _check_empty_fields(profile: Dict[str, Any]) -> List[str]:
         # Check if field is missing, None, or empty string
         if not value or (isinstance(value, str) and not value.strip()):
             empty_fields.append(field)
-
-    for entry in education_info:
-        for field in optional_fields:
-            value = entry.get(field)
-            if not value or (isinstance(value, str) and not value.strip()):
-                empty_fields.append(field)
-
-    for entry in experience_info:
-        for field in optional_fields:
-            value = entry.get(field)
-            if not value or (isinstance(value, str) and not value.strip()):
-                empty_fields.append(field)
-
-    for entry in projects_info:
-        for field in optional_fields:
-            value = entry.get(field)
-            if not value or (isinstance(value, str) and not value.strip()):
-                empty_fields.append(field)
-
+    
     return empty_fields
 
 
@@ -475,15 +448,15 @@ def fix_cv(
     fix_messages = []
     
     # Check for empty optional personal info fields (informational only)
-    empty_fields = _check_empty_fields(profile)
+    empty_optional_fields = _check_personal_info_fields(profile)
     
     if not auto_fix:
         # Just validate
         is_valid, issues = validate_cv(profile, original_profile)
         messages = [str(issue) for issue in issues]
         # Add optional fields info at the end (not blocking)
-        if empty_fields:
-            messages.append(f"INFO: Optional fields can be filled via UI: {', '.join(empty_fields)}")
+        if empty_optional_fields:
+            messages.append(f"INFO: Optional fields can be filled via UI: {', '.join(empty_optional_fields)}")
         return profile, messages
     
     # Validate first
@@ -491,8 +464,8 @@ def fix_cv(
     
     if is_valid:
         # Profile is valid, just inform about optional fields
-        if empty_fields:
-            return profile, [f"No fixes needed. Optional fields to fill: {', '.join(empty_fields)}"]
+        if empty_optional_fields:
+            return profile, [f"No fixes needed. Optional fields to fill: {', '.join(empty_optional_fields)}"]
         return profile, ["No fixes needed"]
     
     # Apply fixes
@@ -526,7 +499,7 @@ def fix_cv(
                 fix_messages.append(f"UNFIXED: {issue}")
     
     # Add info about optional fields at the end (informational)
-    empty_optional_fields = _check_empty_fields(profile)
+    empty_optional_fields = _check_personal_info_fields(profile)
     if empty_optional_fields:
         fix_messages.append(f"INFO: Optional fields to fill via UI: {', '.join(empty_optional_fields)}")
     
