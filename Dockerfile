@@ -35,9 +35,13 @@ WORKDIR /app
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install Python dependencies
+# Install heavy ML dependencies FIRST (separate layer for better caching)
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir sentence-transformers chromadb
+
+# Install remaining dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Install playwright chromium WITHOUT system deps (we installed them above)
 RUN playwright install chromium
