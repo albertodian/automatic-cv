@@ -46,6 +46,13 @@ class CVRAGSystem:
     - Persistent vector storage
     - Hybrid search (semantic + keyword)
     """
+
+    # models_to_test = [
+    # "all-MiniLM-L6-v2",  # Current (baseline)
+    # "all-mpnet-base-v2",  # Better
+    # "multi-qa-mpnet-base-dot-v1",  # QA-optimized
+    # "BAAI/bge-small-en-v1.5"  # SOTA small
+    # ]
     
     def __init__(
         self,
@@ -61,7 +68,7 @@ class CVRAGSystem:
             persist_directory: Path to persist ChromaDB
             collection_name: Name of the collection
         """
-        print(f"🚀 Initializing RAG system with model: {model_name}")
+        print(f"Initializing RAG system with model: {model_name}")
         
         # Initialize embedding model
         self.embedding_model = SentenceTransformer(model_name)
@@ -82,13 +89,13 @@ class CVRAGSystem:
         # Get or create collection
         try:
             self.collection = self.client.get_collection(name=collection_name)
-            print(f"✓ Loaded existing collection: {collection_name}")
+            print(f"Loaded existing collection: {collection_name}")
         except:
             self.collection = self.client.create_collection(
                 name=collection_name,
                 metadata={"hnsw:space": "cosine"}
             )
-            print(f"✓ Created new collection: {collection_name}")
+            print(f"Created new collection: {collection_name}")
     
     def index_profile(self, profile: Dict[str, Any]) -> None:
         """
@@ -97,14 +104,14 @@ class CVRAGSystem:
         Args:
             profile: Complete profile dictionary
         """
-        print("\n📚 Indexing profile content...")
+        print("\nIndexing profile content...")
         
         # Clear existing data to avoid ID conflicts (fresh indexing every time)
         try:
             existing_ids = self.collection.get()['ids']
             if existing_ids:
                 self.collection.delete(ids=existing_ids)
-                print(f"  🗑️ Cleared {len(existing_ids)} old entries")
+                print(f"Cleared {len(existing_ids)} old entries")
         except:
             pass  # Collection is empty or doesn't exist
         
@@ -122,6 +129,7 @@ class CVRAGSystem:
                 'title': exp.get('title', ''),
                 'company': exp.get('company', ''),
                 'period': exp.get('period', ''),
+                'skills': ', '.join(exp.get('skills', []))[:100],
                 'original_json': json.dumps(exp)
             })
             ids.append(f"exp_{i}")
@@ -134,7 +142,9 @@ class CVRAGSystem:
                 'type': 'project',
                 'index': i,
                 'name': proj.get('name', ''),
+                'role': proj.get('role', ''),
                 'description': proj.get('description', '')[:100],
+                'skills': ', '.join(proj.get('skills', []))[:100],
                 'original_json': json.dumps(proj)
             })
             ids.append(f"proj_{i}")
@@ -171,7 +181,7 @@ class CVRAGSystem:
                 metadatas=metadatas,
                 ids=ids
             )
-            print(f"✓ Indexed {len(documents)} items")
+            print(f"Indexed {len(documents)} items")
             print(f"  - {len([m for m in metadatas if m['type']=='experience'])} experiences")
             print(f"  - {len([m for m in metadatas if m['type']=='project'])} projects")
             print(f"  - {len([m for m in metadatas if m['type']=='education'])} education entries")
@@ -276,20 +286,25 @@ class CVRAGSystem:
             if score >= min_score:
                 original = json.loads(metadata['original_json'])
                 
+                # Get recency bonus (works with both 'year' for projects and 'period'/'years' for experiences)
+                recency_bonus = self._calculate_recency_score(
+                    original.get('year', original.get('years', original.get('period', '')))
+                )
+                
                 # Tech stack overlap bonus  
                 tech_bonus = self._calculate_tech_overlap(
                     original.get('skills', []),
                     job_info.get('keywords', [])
                 )
-                
-                # Balanced weights for projects
-                final_score = (score * 0.5) + (tech_bonus * 0.5)
+
+                # Balanced weights for projects: tech most important, semantic and recency as modifiers
+                final_score = (score * 0.25) + (tech_bonus * 0.65) + (recency_bonus * 0.1)
                 
                 retrieved.append(RetrievalResult(
                     content=original,
                     score=final_score,
                     source_type='project',
-                    relevance_reason=f"Semantic match: {score:.2f}, Tech overlap: {tech_bonus:.2f}"
+                    relevance_reason=f"Semantic: {score:.2f}, Tech: {tech_bonus:.2f}, Recency: {recency_bonus:.2f}"
                 ))
         
         retrieved.sort(key=lambda x: x.score, reverse=True)
@@ -412,7 +427,7 @@ class CVRAGSystem:
             name=self.collection.name,
             metadata={"hnsw:space": "cosine"}
         )
-        print("✓ Database reset complete")
+        print("Database reset complete")
     
     # Helper methods
     
@@ -431,6 +446,7 @@ class CVRAGSystem:
         """Format project for embedding."""
         parts = [
             proj.get('name', ''),
+            proj.get('role', ''),
             proj.get('description', ''),
             ' '.join(proj.get('skills', []))
         ]
@@ -503,33 +519,46 @@ class CVRAGSystem:
         # Each match adds 6%, max 30% bonus
         return min(matches * 0.06, 0.3)
     
-    def _calculate_recency_score(self, period: str) -> float:
-        """Calculate recency bonus (0.0 to 1.0)."""
-        if not period:
+    def _calculate_recency_score(self, period_or_year: str) -> float:
+        """
+        Calculate recency bonus (0.0 to 1.0).
+        
+        Handles both:
+        - Experience periods: "2023-2024", "Jan 2023 - Dec 2024"
+        - Project years: "2024", "2023"
+        
+        Args:
+            period_or_year: Period string (experience) or year string (project)
+            
+        Returns:
+            Recency score from 0.0 (old) to 1.0 (current/recent)
+        """
+        if not period_or_year:
             return 0.0
         
-        # Extract years (e.g., "2023-2024" or "Jan 2023 - Dec 2024")
+        # Extract years (e.g., "2023-2024", "Jan 2023 - Dec 2024", or just "2024")
         import re
-        years = re.findall(r'\d{4}', period)
+        years = re.findall(r'\d{4}', str(period_or_year))
         
         if not years:
             return 0.0
         
+        # Use the most recent year found
         latest_year = max([int(y) for y in years])
         current_year = datetime.now().year
         
         years_ago = current_year - latest_year
         
-        # Current or future experience
-        if years_ago <= 0:
+        # Scoring based on how recent the work is
+        if years_ago <= 0:  # Current or future
             return 1.0
-        elif years_ago == 1:
+        elif years_ago == 1:  # Last year
             return 0.8
-        elif years_ago == 2:
+        elif years_ago == 2:  # 2 years ago
             return 0.5
-        elif years_ago == 3:
+        elif years_ago == 3:  # 3 years ago
             return 0.3
-        else:
+        else:  # 4+ years ago
             return 0.1
     
     def _normalize_keyword(self, keyword: str) -> set:
@@ -688,8 +717,7 @@ class RAGEnhancedGenerator:
         Returns:
             Optimized profile dict
         """
-        print("\n🔍 RAG-Enhanced Profile Generation")
-        print("="*60)
+        print("\nRAG-Enhanced Profile Generation")
         
         # Retrieve relevant content
         print("\n1. Retrieving relevant experiences...")
@@ -781,5 +809,5 @@ class RAGEnhancedGenerator:
         if '_rag_metadata' in optimized:
             del optimized['_rag_metadata']
         
-        print("✓ RAG-enhanced generation complete!\n")
+        print("RAG-enhanced generation complete\n")
         return optimized

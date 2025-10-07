@@ -45,6 +45,10 @@ YOU MUST USE THESE EXACT FIELD NAMES:
     "name": "Full Name",
     "email": "email@example.com",
     "phone": "+1234567890",
+    "nationality": "Country",            ← Extract if present, empty string if not
+    "age": 25,                           ← Extract if present, null if not
+    "linkedin": "linkedin.com/in/user",  ← Extract if present, empty string if not
+    "github": "github.com/user",         ← Extract if present, empty string if not
     "languages": ["Language1", "Language2"]
   }},
   "summary": "1-2 sentences",
@@ -58,15 +62,21 @@ YOU MUST USE THESE EXACT FIELD NAMES:
       "descrition_list": [                 ← MUST BE "descrition_list" (yes, typo!)
         "Bullet 1",
         "Bullet 2"
-      ]
+      ],
+      "skills": ["List", "of", "skills"],  ← IF NOT ALREADY THERE, add keywords coherent with the job title and description!
+      "reference": "Name of someone referencing the candidate (Ex. Dr House)"   ← Extract if present, empty string if not
+      "reference_letter_url": "Reference letter link"                           ← Extract if present, empty string if not
     }}
   ],
   
   "projects": [
     {{
       "name": "Project Name",              ← MUST BE "name" NOT "project_name"!
-      "year": "Feb 2024 - Jun 2024",      ← MUST BE "year" (singular) NOT "date"!
-      "description": "Single text description of the project"  ← MUST BE "description" (STRING, no typo!)
+      "role": "Role (ex. AI Engineer)",    ← IF NOT ALREADY THERE, fill in the role name based on the project title and description
+      "year": "2024",      ← MUST BE "year" (singular) NOT "date"!
+      "description": "Single text description of the project"  ← MUST BE "description" (STRING, no typo!), SLIGHTLY rewrite the description to make it more appealing-
+      "skills": ["List", "of", "skills"],  ← IF NOT ALREADY THERE, add keywords coherent with the project title and description! MINIMUM 8 SKILLS
+      "url": "link to the project"         ← Extract if present, empty string if not
     }}
   ],
   
@@ -77,10 +87,11 @@ YOU MUST USE THESE EXACT FIELD NAMES:
       "location": "City, Country",
       "year": "Sep 2020 - Jul 2023",      ← MUST BE "year" NOT "date"!
       "description": "Single text description of the Degree specifics"
+      "grade": "100/110"                  ← Extract if present, empty string if not
     }}
   ],
   
-  "skills": [                              ← MUST BE flat array NOT nested object!
+  "skills": [                              ← MUST BE flat array NOT nested object! IF NOT ALREADY THERE, fill in using keywords inherent with the candidate education, experience and projects.
     "Python",
     "JavaScript",
     "Machine Learning"

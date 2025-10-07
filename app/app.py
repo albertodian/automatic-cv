@@ -31,21 +31,22 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 project_root = os.path.join(os.path.dirname(__file__), '..')
 os.chdir(project_root)
 
-from src.data_loader import load_profile
+from utils import load_profile
 from src.job_parser import fetch_job_description
 from src.llm_agent import (
-    generate_optimized_profile_with_validation,
+    generate_optimized_profile,
     extract_relevant_job_info,
     extract_cv_from_pdf_smart,
 )
-from src.renderer import render_cv_pdf_html, render_cover_letter_pdf
-from src.renderer_memory import render_cv_pdf_memory
+from src.structure_validator import fix_cv
+from src.renderer import render_cv_pdf_html, render_cv_pdf_memory
 from src.ats_optimizer import (
     optimize_profile_for_ats,
     predict_ats_score,
-    validate_ats_structure
+    validate_ats_structure,
+    refine_cv_for_ats,
+    get_ats_summary
 )
-from src.ats_refiner import refine_cv_for_ats, get_ats_summary
 
 # Initialize FastAPI app with settings from config
 app = FastAPI(
@@ -317,20 +318,21 @@ async def generate_cv(request: GenerateCVRequest):
         )
         
         # Generate optimized profile
-        if request.skip_validation:
-            from src.llm_agent import generate_optimized_profile
-            optimized_profile = generate_optimized_profile(
-                profile_dict, 
-                job_info, 
-                request.model_name
+        optimized_profile = generate_optimized_profile(
+            profile_dict, 
+            job_info, 
+            request.model_name
+        )
+        
+        # Apply validation and fixes if not skipped
+        if not request.skip_validation:
+            optimized_profile, fix_messages = fix_cv(
+                profile=optimized_profile,
+                original_profile=profile_dict,
+                auto_fix=True
             )
-        else:
-            optimized_profile = generate_optimized_profile_with_validation(
-                profile=profile_dict,
-                job_info=job_info,
-                model_name=request.model_name,
-                max_retries=request.max_retries
-            )
+            if fix_messages:
+                print("Applied fixes:", ", ".join(fix_messages))
         
         # Apply ATS iterative refinement to achieve 90%+ score
         optimized_profile, ats_result, iterations = refine_cv_for_ats(
@@ -383,20 +385,21 @@ async def generate_cv_from_url(request: GenerateCVFromURLRequest):
         job_info = extract_relevant_job_info(job_text, request.model_name)
         
         # Generate optimized profile
-        if request.skip_validation:
-            from src.llm_agent import generate_optimized_profile
-            optimized_profile = generate_optimized_profile(
-                profile_dict,
-                job_info,
-                request.model_name
+        optimized_profile = generate_optimized_profile(
+            profile_dict,
+            job_info,
+            request.model_name
+        )
+        
+        # Apply validation and fixes if not skipped
+        if not request.skip_validation:
+            optimized_profile, fix_messages = fix_cv(
+                profile=optimized_profile,
+                original_profile=profile_dict,
+                auto_fix=True
             )
-        else:
-            optimized_profile = generate_optimized_profile_with_validation(
-                profile=profile_dict,
-                job_info=job_info,
-                model_name=request.model_name,
-                max_retries=request.max_retries
-            )
+            if fix_messages:
+                print("Applied fixes:", ", ".join(fix_messages))
         
         # Apply ATS iterative refinement to achieve 90%+ score
         optimized_profile, ats_result, iterations = refine_cv_for_ats(

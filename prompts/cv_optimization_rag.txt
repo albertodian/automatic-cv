@@ -174,7 +174,7 @@ YOU MUST USE THESE EXACT FIELD NAMES OR THE CV WILL BE BROKEN:
   
   "education": [
     {{
-      "degree": "Degree Name",
+      "degree": "Degree Name",               ← Condense the degree's title in one single string, and do not include the location/institution in the title (NOT like "Double Master Degree in Robotics and Artificial Intelligence; Master in Mechatronics Engineering of Trento")
       "institution": "University Name",
       "year": "Sep 2020 - Jul 2023",         ← MUST BE "year" NOT "date"!
       "location": "City, Country",
