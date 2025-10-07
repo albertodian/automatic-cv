@@ -41,12 +41,11 @@ from src.llm_agent import (
 from src.structure_validator import fix_cv
 from src.renderer import render_cv_pdf_html, render_cv_pdf_memory
 from src.ats_optimizer import (
-    optimize_profile_for_ats,
     predict_ats_score,
     validate_ats_structure,
     refine_cv_for_ats,
-    get_ats_summary
 )
+from src.rag_system import CVRAGSystem, RAGEnhancedGenerator
 
 # Initialize FastAPI app with settings from config
 app = FastAPI(
@@ -299,42 +298,43 @@ async def extract_cv_from_pdf(
 @app.post("/api/cv/generate", response_model=CVResponse, tags=["CV Generation"])
 async def generate_cv(request: GenerateCVRequest):
     """
-    Generate optimized CV based on job description.
+    Generate optimized CV based on job description using RAG.
     
     This endpoint:
     1. Takes your profile and a job description
-    2. Optimizes your CV using AI to match the job requirements
-    3. Validates the output (unless skip_validation is True)
-    4. Returns the optimized CV data
+    2. Uses RAG to retrieve relevant experiences and projects
+    3. Optimizes your CV using AI to match the job requirements
+    4. Validates the output 
+    5. Applies ATS optimization
+    6. Returns the optimized CV data (JSON format).
     """
     try:
-        # Convert Pydantic models to dict
         profile_dict = request.profile.model_dump()
         
-        # Parse job description to extract structured info
         job_info = extract_relevant_job_info(
             request.job_description, 
             request.model_name
         )
         
-        # Generate optimized profile
-        optimized_profile = generate_optimized_profile(
-            profile_dict, 
-            job_info, 
-            request.model_name
+        rag_system = CVRAGSystem()
+        rag_system.reset_database()
+        rag_system.index_profile(profile_dict)
+        
+        rag_generator = RAGEnhancedGenerator(rag_system)
+        
+        optimized_profile = rag_generator.generate_optimized_profile_with_rag(
+            profile=profile_dict,
+            job_info=job_info,
+            llm_function=generate_optimized_profile,
+            model_name=request.model_name
         )
         
-        # Apply validation and fixes if not skipped
-        if not request.skip_validation:
-            optimized_profile, fix_messages = fix_cv(
-                profile=optimized_profile,
-                original_profile=profile_dict,
-                auto_fix=True
-            )
-            if fix_messages:
-                print("Applied fixes:", ", ".join(fix_messages))
+        optimized_profile, fix_messages = fix_cv(
+            profile=optimized_profile,
+            original_profile=profile_dict,
+            auto_fix=True
+        )
         
-        # Apply ATS iterative refinement to achieve 90%+ score
         optimized_profile, ats_result, iterations = refine_cv_for_ats(
             profile=optimized_profile,
             job_keywords=job_info.get('keywords', []),
@@ -359,17 +359,17 @@ async def generate_cv(request: GenerateCVRequest):
 @app.post("/api/cv/generate-from-url", response_model=CVResponse, tags=["CV Generation"])
 async def generate_cv_from_url(request: GenerateCVFromURLRequest):
     """
-    Generate optimized CV from job posting URL.
+    Generate optimized CV from job posting URL using RAG.
     
     This is a convenience endpoint that combines:
     1. Fetching the job description from URL
     2. Parsing the job requirements
-    3. Generating an optimized CV
+    3. Using RAG to retrieve relevant content
+    4. Generating an optimized CV
     
     All in one API call.
     """
     try:
-        # Fetch job description
         job_text = fetch_job_description(str(request.job_url))
         
         if not job_text:
@@ -378,30 +378,30 @@ async def generate_cv_from_url(request: GenerateCVFromURLRequest):
                 detail="Failed to fetch job description from URL"
             )
         
-        # Convert profile to dict
         profile_dict = request.profile.model_dump()
         
-        # Extract job info
         job_info = extract_relevant_job_info(job_text, request.model_name)
         
-        # Generate optimized profile
-        optimized_profile = generate_optimized_profile(
-            profile_dict,
-            job_info,
-            request.model_name
+        rag_system = CVRAGSystem()
+        rag_system.reset_database()
+        rag_system.index_profile(profile_dict)
+        
+        rag_generator = RAGEnhancedGenerator(rag_system)
+        
+        optimized_profile = rag_generator.generate_optimized_profile_with_rag(
+            profile=profile_dict,
+            job_info=job_info,
+            llm_function=generate_optimized_profile,
+            model_name=request.model_name
         )
         
-        # Apply validation and fixes if not skipped
         if not request.skip_validation:
             optimized_profile, fix_messages = fix_cv(
                 profile=optimized_profile,
                 original_profile=profile_dict,
                 auto_fix=True
             )
-            if fix_messages:
-                print("Applied fixes:", ", ".join(fix_messages))
         
-        # Apply ATS iterative refinement to achieve 90%+ score
         optimized_profile, ats_result, iterations = refine_cv_for_ats(
             profile=optimized_profile,
             job_keywords=job_info.get('keywords', []),
@@ -456,7 +456,8 @@ async def get_ats_score(
 @app.post("/api/cv/ats-optimize", response_model=CVResponse, tags=["ATS Optimization"])
 async def optimize_cv_for_ats(
     profile: ProfileData,
-    job_keywords: List[str] = Query(..., description="Keywords from job posting")
+    job_keywords: List[str] = Query(..., description="Keywords from job posting"),
+    model_name: str = Query(default=settings.DEFAULT_MODEL, description="LLM model to use")
 ):
     """
     Optimize CV for ATS systems.
@@ -471,11 +472,10 @@ async def optimize_cv_for_ats(
     try:
         profile_dict = profile.model_dump()
         
-        # Apply ATS iterative refinement to achieve 90%+ score
         optimized_profile, ats_result, iterations = refine_cv_for_ats(
             profile=profile_dict,
             job_keywords=job_keywords,
-            model_name="openai/gpt-4.1-mini",
+            model_name=model_name,
             max_iterations=3,
             target_score=90.0,
             min_improvement=5.0
@@ -611,6 +611,144 @@ async def render_cv_stream(
         raise HTTPException(
             status_code=500,
             detail=f"Error rendering CV: {str(e)}"
+        )
+
+# ============================================================================
+# Complete CV Generation Pipeline (JSON Output)
+# ============================================================================
+
+@app.post("/api/cv/generate-json", response_model=CVResponse, tags=["CV Generation"])
+async def generate_cv_json(request: GenerateCVRequest):
+    """
+    Generate optimized CV and return JSON (no PDF).
+    
+    Complete pipeline:
+    1. Parse job description
+    2. Use RAG to retrieve relevant content
+    3. Generate optimized CV with LLM
+    4. Validate structure
+    5. Apply ATS optimization
+    6. Return final JSON
+    
+    Use this endpoint when you only need the JSON data without PDF rendering.
+    """
+    try:
+        profile_dict = request.profile.model_dump()
+        
+        job_info = extract_relevant_job_info(
+            request.job_description, 
+            request.model_name
+        )
+        
+        rag_system = CVRAGSystem()
+        rag_system.reset_database()
+        rag_system.index_profile(profile_dict)
+        
+        rag_generator = RAGEnhancedGenerator(rag_system)
+        
+        optimized_profile = rag_generator.generate_optimized_profile_with_rag(
+            profile=profile_dict,
+            job_info=job_info,
+            llm_function=generate_optimized_profile,
+            model_name=request.model_name
+        )
+        
+        if not request.skip_validation:
+            optimized_profile, fix_messages = fix_cv(
+                profile=optimized_profile,
+                original_profile=profile_dict,
+                auto_fix=True
+            )
+        
+        optimized_profile, ats_result, iterations = refine_cv_for_ats(
+            profile=optimized_profile,
+            job_keywords=job_info.get('keywords', []),
+            model_name=request.model_name,
+            max_iterations=3,
+            target_score=90.0,
+            min_improvement=5.0
+        )
+        
+        return CVResponse(
+            success=True,
+            profile=optimized_profile,
+            message=f"CV successfully generated! ATS Score: {ats_result['score']:.1f}% (Iterations: {iterations})"
+        )
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating CV: {str(e)}"
+        )
+
+@app.post("/api/cv/generate-json-from-url", response_model=CVResponse, tags=["CV Generation"])
+async def generate_cv_json_from_url(request: GenerateCVFromURLRequest):
+    """
+    Generate optimized CV from job URL and return JSON (no PDF).
+    
+    Complete pipeline:
+    1. Fetch job description from URL
+    2. Parse job requirements
+    3. Use RAG to retrieve relevant content
+    4. Generate optimized CV with LLM
+    5. Validate structure
+    6. Apply ATS optimization
+    7. Return final JSON
+    
+    Use this endpoint when you only need the JSON data without PDF rendering.
+    """
+    try:
+        job_text = fetch_job_description(str(request.job_url))
+        
+        if not job_text:
+            raise HTTPException(
+                status_code=400,
+                detail="Failed to fetch job description from URL"
+            )
+        
+        profile_dict = request.profile.model_dump()
+        
+        job_info = extract_relevant_job_info(job_text, request.model_name)
+        
+        rag_system = CVRAGSystem()
+        rag_system.reset_database()
+        rag_system.index_profile(profile_dict)
+        
+        rag_generator = RAGEnhancedGenerator(rag_system)
+        
+        optimized_profile = rag_generator.generate_optimized_profile_with_rag(
+            profile=profile_dict,
+            job_info=job_info,
+            llm_function=generate_optimized_profile,
+            model_name=request.model_name
+        )
+        
+        if not request.skip_validation:
+            optimized_profile, fix_messages = fix_cv(
+                profile=optimized_profile,
+                original_profile=profile_dict,
+                auto_fix=True
+            )
+        
+        optimized_profile, ats_result, iterations = refine_cv_for_ats(
+            profile=optimized_profile,
+            job_keywords=job_info.get('keywords', []),
+            model_name=request.model_name,
+            max_iterations=3,
+            target_score=90.0,
+            min_improvement=5.0
+        )
+        
+        return CVResponse(
+            success=True,
+            profile=optimized_profile,
+            message=f"CV successfully generated from URL! ATS Score: {ats_result['score']:.1f}% (Iterations: {iterations})"
+        )
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating CV from URL: {str(e)}"
         )
 
 # ============================================================================

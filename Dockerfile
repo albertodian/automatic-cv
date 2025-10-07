@@ -1,24 +1,32 @@
 # Use official Python image
 FROM python:3.10-slim
 
-# Install system dependencies for weasyprint, playwright, and OCR
+# Install system dependencies in one layer
 RUN apt-get update && apt-get install -y \
-    # WeasyPrint dependencies
     libcairo2 \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
     libgdk-pixbuf-2.0-0 \
     libffi-dev \
     shared-mime-info \
-    # Playwright dependencies
     wget \
-    gnupg \
     ca-certificates \
-    # OCR dependencies
     tesseract-ocr \
     poppler-utils \
-    # Build tools
     gcc \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -31,8 +39,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
-# Install playwright chromium
-RUN playwright install --with-deps chromium
+# Install playwright chromium WITHOUT system deps (we installed them above)
+RUN playwright install chromium
 
 # Copy application code
 COPY . .
