@@ -1,10 +1,11 @@
 from jinja2 import Template
+from io import BytesIO
 from weasyprint import HTML
 import subprocess
 import os
 
 
-def render_cv_pdf_html(profile, template, output_path="output/cv_output.pdf"):
+def render_cv_pdf_html(profile, template, output_path="output/cv_output.pdf", output_filename=None):
     """
     Render CV to PDF using HTML template
     
@@ -12,7 +13,12 @@ def render_cv_pdf_html(profile, template, output_path="output/cv_output.pdf"):
         profile: Profile data dictionary
         template: Template name ('tech', 'business', or 'modern')
         output_path: Output PDF file path (default: output/cv_output.pdf)
+        output_filename: Optional filename to use (overrides output_path)
     """
+    
+    # If output_filename provided, use it
+    if output_filename:
+        output_path = os.path.join("output", output_filename)
     
     if template == "tech":
         template_path = "templates/cv_template_tech.html"
@@ -23,7 +29,6 @@ def render_cv_pdf_html(profile, template, output_path="output/cv_output.pdf"):
     else:
         raise ValueError("Invalid template type. Choose 'tech', 'business', or 'modern'.")
 
-    
     with open(template_path, "r", encoding="utf-8") as f:
         template_content = f.read()
 
@@ -42,56 +47,31 @@ def render_cv_pdf_html(profile, template, output_path="output/cv_output.pdf"):
     HTML(string=rendered_html).write_pdf(output_path)
     print(f"CV generated: {output_path}")
 
-def render_cv_pdf_latex(profile: dict,
-                  template: str,
-                  output_pdf: str = "output/cv_output.pdf"):
+
+
+def render_cv_pdf_memory(profile: dict, template: str = "tech") -> BytesIO:
+    """Generate PDF in memory, return BytesIO buffer ready to stream."""
     
+    # Select template
+    template_map = {
+        "tech": "templates/cv_template_tech.html",
+        "business": "templates/cv_template_business.html",
+        "modern": "templates/cv_template_modern.html"
+    }
     
+    template_path = template_map.get(template)
+    if not template_path:
+        raise ValueError(f"Invalid template: {template}")
+    
+    # Load and render HTML
     with open(template_path, "r", encoding="utf-8") as f:
-        template_content = f.read()
-
-    template = Template(template_content)
-
-    rendered_tex = template.render(
-        personal_info=profile.get("personal_info", {}),
-        summary=profile.get("summary", ""),
-        experience=profile.get("experience", []),
-        education=profile.get("education", []),
-        projects=profile.get("projects", []),
-        skills=profile.get("skills", [])  
-    )
-
-    tex_file = os.path.splitext(output_pdf)[0] + ".tex"
-    with open(tex_file, "w", encoding="utf-8") as f:
-        f.write(rendered_tex)
-
-    subprocess.run(["pdflatex", "-interaction=nonstopmode", tex_file], check=True)
-    print(f"CV generated: {output_pdf}")
-
-
-def render_cover_letter_pdf(cover_letter_text: str, profile: dict, job_data: dict,
-                            template_path: str = "templates/cover_letter_template.tex",
-                            output_pdf: str = "output/cover_letter.pdf"):
-    from jinja2 import Template
-    import os
-    import subprocess
-
-    with open(template_path, "r", encoding="utf-8") as f:
-        template_content = f.read()
-
-    template = Template(template_content)
-    rendered_tex = template.render(
-        cover_letter=cover_letter_text,
-        name=profile.get("personal_info", {}).get("name", ""),
-        date="",
-        company_name=job_data.get("title", "Hiring Team"),
-        company_address=""
-    )
-
-    tex_file = os.path.splitext(output_pdf)[0] + ".tex"
-    os.makedirs(os.path.dirname(tex_file) or ".", exist_ok=True)
-    with open(tex_file, "w", encoding="utf-8") as f:
-        f.write(rendered_tex)
-
-    subprocess.run(["pdflatex", "-interaction=nonstopmode", tex_file], check=True)
-    print(f"Cover letter generated: {output_pdf}")
+        jinja_template = Template(f.read())
+    
+    rendered_html = jinja_template.render(**profile)
+    
+    # Generate PDF to memory
+    pdf_buffer = BytesIO()
+    HTML(string=rendered_html).write_pdf(pdf_buffer)
+    pdf_buffer.seek(0)
+    
+    return pdf_buffer

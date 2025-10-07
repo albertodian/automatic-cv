@@ -17,7 +17,7 @@ from pathlib import Path
 # Add src directory to Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from cv_validator import validate_cv
+from structure_validator import fix_cv
 
 
 def create_problematic_cv():
@@ -166,19 +166,20 @@ def main():
     print("   This may take a moment...")
     
     try:
-        corrected_cv, issues = validate_cv(
-            cv_data=problematic_cv,
-            job_info=job_info,
-            template_path="templates/cv_template.html"
+        # Use new unified validator
+        corrected_cv, fix_messages = fix_cv(
+            profile=problematic_cv,
+            original_profile=None,  # No original for this demo
+            auto_fix=True
         )
         
         print(f"\n3. Validation Results:")
-        print(f"   📋 Total issues found: {len(issues)}")
+        print(f"   📋 Total fixes applied: {len(fix_messages)}")
         
-        if issues:
-            print("\n   Issues detected and fixed:")
-            for i, issue in enumerate(issues, 1):
-                print(f"   {i:2d}. {issue}")
+        if fix_messages:
+            print("\n   Fixes applied:")
+            for i, message in enumerate(fix_messages, 1):
+                print(f"   {i:2d}. {message}")
         
         print(f"\n4. Comparison:")
         print(f"   Original experiences: {len(problematic_cv.get('experience', []))}")

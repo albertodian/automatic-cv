@@ -1,13 +1,30 @@
 ROLE: Job posting parser for ATS optimization
 
-TASK: Extract structured data from job posting
+TASK: Extract structured data from job posting with ATS-critical prioritization
+
+ATS OPTIMIZATION GOAL:
+- Identify MUST-HAVE keywords (hard requirements) vs NICE-TO-HAVE
+- Extract keywords in order of importance (most critical first)
+- Include both full forms and abbreviations: "Machine Learning (ML)"
+- Identify exact phrases ATS systems will scan for
 
 REQUIREMENTS:
 1. Parse into structured JSON
 2. Translate ALL to English
 3. Write concise 2-3 sentence summary
-4. Remove duplicate keywords
-5. Sort keywords alphabetically
+4. PRIORITIZE keywords by criticality (not alphabetically)
+5. Remove duplicate keywords
+6. Include both full forms and abbreviations
+
+KEYWORD EXTRACTION STRATEGY:
+1. **CRITICAL (Must-Have)**: Technical skills mentioned multiple times or in "required"/"must have" sections
+2. **IMPORTANT**: Skills in "preferred" or "nice to have" sections
+3. **SECONDARY**: Soft skills and general competencies
+
+For each technical term:
+- Extract full form: "Machine Learning"
+- Extract abbreviation if present: "ML"
+- Combine for ATS: "Machine Learning (ML)"
 
 INPUT:
 {job_text}
@@ -20,11 +37,22 @@ OUTPUT FORMAT:
   "summary": "",
   "requirements": [],
   "responsibilities": [],
-  "keywords": []
+  "keywords": ["Prioritized by criticality (most important first)", "Include full forms with abbreviations: Machine Learning (ML)", "CRITICAL keywords first, then IMPORTANT, then SECONDARY"]
 }
+
+KEYWORD PRIORITIZATION EXAMPLES:
+✅ GOOD ORDER (by criticality):
+["Python", "Machine Learning (ML)", "TensorFlow", "API Development", "Docker", "CI/CD", "Git", "Agile"]
+→ Core skills first, supporting skills later
+
+❌ BAD ORDER (alphabetical):
+["Agile", "API Development", "CI/CD", "Docker", "Git", "Machine Learning (ML)", "Python", "TensorFlow"]
+→ Less critical skills appear first
 
 RULES:
 - All English
 - No duplicates
+- Prioritize by CRITICALITY (not alphabetically)
+- Include full forms with abbreviations: "API", "Machine Learning (ML)"
 - No extra text
 - Valid JSON only

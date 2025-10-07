@@ -42,3 +42,6 @@ Thumbs.db
 
 # Docker
 .dockerignore
+
+# Chroma DB
+chroma_db/

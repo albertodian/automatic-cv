@@ -1,39 +1,162 @@
 # Automatic CV Generator 🚀
 
-An intelligent **AI-powered CV optimization and generation system** that automatically creates tailored, ATS-friendly CVs for any job posting. Available as both a **CLI tool** and a **REST API** for easy integration.
+An intelligent **RAG-powered CV optimization system** that uses **Retrieval-Augmented Generation** to create perfectly tailored, ATS-optimized CVs for any job posting. Combines semantic search with LLMs for maximum relevance and precision.
 
-> **🚂 Now optimized for Railway deployment** - No timeout limits, perfect for LLM + PDF processing!
+> **🚂 Production-ready on Railway** - Handles 60-150s LLM + PDF generation without timeouts!
 
 ## ✨ Key Features
 
-### 🤖 AI-Powered Optimization
-- **Intelligent job parsing** – Extracts key requirements from any job posting URL or text
-- **LLM-based CV optimization** – Uses GPT-4.1-mini (via Replicate API) to tailor your CV
-- **Automatic keyword matching** – Ensures ATS compatibility with relevant keywords
-- **Smart content validation** – Prevents hallucinations and enforces one-page limit
+### � RAG-Powered Intelligence
+- **Semantic content retrieval** – Uses ChromaDB vector database with sentence transformers
+- **Smart experience/project selection** – Retrieves only the most relevant items per job
+- **Synonym-aware matching** – Understands "ML" = "Machine Learning" = "model training"
+- **Relevance scoring** – Combines semantic similarity + keyword overlap + recency
 
-### 📄 Advanced CV Processing
-- **PDF resume parsing** – Extract structured data from existing PDFs (with OCR support)
-- **Multiple extraction methods** – pdfplumber, PyMuPDF, PyPDF2, and OCR fallback
-- **Intelligent data structuring** – AI organizes unstructured resume text
+### 🤖 AI-Driven Optimization
+- **LLM-based enhancement** – GPT-4.1-mini (via Replicate) for natural language generation
+- **Iterative ATS refinement** – Automatically improves to 90%+ ATS compatibility score
+- **Keyword density optimization** – Ensures 3-5 mentions of critical keywords
+- **Structure validation** – Guarantees correct JSON format for template rendering
+
+### 📄 Advanced Resume Processing
+- **Multi-method PDF parsing** – pdfplumber, PyMuPDF, PyPDF2, OCR (Tesseract) fallback
+- **Intelligent job scraping** – Playwright-based extraction from LinkedIn, Indeed, etc.
+- **Smart field normalization** – Handles inconsistent date formats and field names
 
 ### 🎨 Professional Templates
-- **Tech Template** – Clean, minimalist design for software engineering roles
-- **Business Template** – Modern gradient design with two-column layout
-- **Modern Template** – Timeline-style with blue accents for creative roles
+- **Tech Template** – Clean, minimalist design for engineering roles
+- **Business Template** – Modern gradient with two-column layout
+- **Modern Template** – Timeline-style with blue accents
 
-### 🌐 REST API
-- **Production-ready FastAPI** server with 8 comprehensive endpoints
-- **Railway deployment** – No timeout limits, perfect for LLM + PDF processing
-- **File upload support** – Parse existing resumes via API
-- **Background processing** – Automatic cleanup of temporary files
-
-### ✅ Quality Assurance
-- **Automatic validation** – Checks for content limits and invented information
-- **Self-healing** – LLM-based fixes with emergency fallback corrections
-- **Page limit enforcement** – Ensures one-page output with WeasyPrint validation
+### 🌐 Production-Ready API
+- **FastAPI REST API** with 8 endpoints for all operations
+- **Railway-optimized** – No timeouts, perfect for 60-150s LLM workflows
+- **File upload support** – Parse and generate CVs via HTTP
+- **Comprehensive docs** – Auto-generated Swagger/OpenAPI
 
 ---
+
+## 🔬 How It Works: The Pipeline
+
+### Architecture Overview
+
+```
+Job URL → Job Parser → RAG System → LLM Generator → ATS Optimizer → PDF Renderer
+   ↓          ↓            ↓             ↓              ↓              ↓
+ Text      Keywords   Relevant      Optimized      90%+ Score    Final PDF
+Extract   Analysis   Content       Profile        Validation
+```
+
+### Detailed Pipeline
+
+#### 1. **Job Information Extraction** (`job_parser.py`)
+```python
+Input:  Job URL or raw text
+Tools:  Playwright (web scraping)
+LLM:    GPT-4.1-mini (structure extraction)
+Output: {title, company, keywords[], requirements[], responsibilities[]}
+```
+- Scrapes job posting content from any URL
+- Uses LLM to extract structured information
+- Identifies 10-15 critical keywords for matching
+
+#### 2. **RAG Content Retrieval** (`rag_system.py`)
+```python
+Input:  User profile + job keywords
+Tools:  ChromaDB (vector database)
+        Sentence-Transformers (all-MiniLM-L6-v2)
+Method: Semantic similarity + keyword matching + recency scoring
+Output: Top 3 experiences + Top 4 projects (pre-filtered)
+```
+- **Indexing Phase**:
+  - Embeds all experiences, projects, skills into vector space
+  - Stores in persistent ChromaDB collection
+  
+- **Retrieval Phase**:
+  - Semantic search for experiences matching job requirements
+  - Hybrid scoring: `0.4*semantic + 0.4*keywords + 0.2*recency`
+  - Retrieves only most relevant content (prevents hallucination)
+
+#### 3. **LLM-Based Generation** (`llm_agent.py`)
+```python
+Input:  RAG-filtered profile + job info
+LLM:    GPT-4.1-mini via Replicate API
+Prompt: cv_optimization_rag.txt (2000+ tokens)
+Output: Optimized JSON profile
+```
+- Uses pre-filtered content from RAG (no need to select)
+- Focuses on keyword weaving and enhancement
+- Generates 2-sentence summary with 4-5 keywords
+- Preserves all provided experiences/projects
+
+#### 4. **Structure Validation** (`structure_validator.py`)
+```python
+Checks:
+  ✓ experience[].years (not "date")
+  ✓ experience[].descrition_list (with typo!)
+  ✓ projects[].year (singular)
+  ✓ projects[].description (string, no typo)
+  ✓ No missing entries
+  
+Actions: Auto-fix field names, restore removed entries
+```
+- Ensures JSON matches template expectations
+- Handles LLM inconsistencies automatically
+- Validates required fields exist
+
+#### 5. **ATS Optimization** (`ats_optimizer.py`, `ats_refiner.py`)
+```python
+Scoring: 60% keyword match + 20% density + 20% structure
+Target:  90%+ ATS compatibility
+Method:  Iterative refinement (max 3 iterations)
+```
+- **Initial optimization**: Expands abbreviations (ML → Machine Learning)
+- **Iterative refinement**:
+  - Calculates current ATS score
+  - Identifies missing/under-represented keywords
+  - LLM enhances descriptions with keywords
+  - Repeats until 90%+ or max iterations
+  - Preserves structure (no new entries)
+
+#### 6. **PDF Rendering** (`renderer.py`)
+```python
+Input:  Final validated JSON
+Method: Jinja2 templates → HTML → WeasyPrint → PDF
+Output: ATS-friendly single-page PDF
+```
+- Selects template (tech/business/modern)
+- Renders HTML from Jinja2 template
+- Converts to PDF with WeasyPrint
+- Validates single-page output
+
+---
+
+## 🛠️ Tech Stack
+
+### Core Technologies
+- **Python 3.10+** – Primary language
+- **FastAPI** – REST API framework
+- **Replicate API** – LLM access (GPT-4.1-mini)
+
+### RAG & Embeddings
+- **ChromaDB** – Vector database for semantic search
+- **Sentence-Transformers** – Embedding model (all-MiniLM-L6-v2)
+- **NumPy** – Vector operations
+
+### Data Processing
+- **Playwright** – Job posting web scraping
+- **pdfplumber, PyMuPDF, PyPDF2** – PDF text extraction
+- **Tesseract OCR** – Scanned PDF support (optional)
+
+### PDF Generation
+- **Jinja2** – HTML templating
+- **WeasyPrint** – HTML to PDF conversion
+- **CSS3** – Professional styling
+
+### Deployment
+- **Railway** – Cloud hosting (recommended)
+- **Docker** – Containerization
+- **Gunicorn** – Production WSGI server
 
 ---
 
@@ -41,36 +164,40 @@ An intelligent **AI-powered CV optimization and generation system** that automat
 
 ```
 automatic-cv/
-├── app/
-│   └── app.py                    # FastAPI REST API server
 ├── src/
-│   ├── main.py                   # CLI entry point
-│   ├── data_loader.py            # Profile JSON loader
-│   ├── job_parser.py             # Job posting scraper
-│   ├── llm_agent.py              # LLM integration & validation
-│   ├── renderer.py               # PDF generation (HTML → PDF)
-│   ├── cv_validator.py           # CV validation system
-│   └── pdf_parser.py             # PDF resume extraction
+│   ├── main_rag.py              # 🚀 Main RAG-enhanced CLI entry point
+│   ├── rag_system.py            # 🧠 RAG retrieval & semantic search
+│   ├── llm_agent.py             # 🤖 LLM generation & validation
+│   ├── ats_optimizer.py         # 📊 ATS scoring algorithms
+│   ├── ats_refiner.py           # 🔄 Iterative ATS refinement
+│   ├── structure_validator.py   # ✅ JSON structure validation
+│   ├── data_loader.py           # 📂 Profile loading & normalization
+│   ├── job_parser.py            # 🌐 Job scraping (Playwright)
+│   └── renderer.py              # 🎨 PDF generation (Jinja2 + WeasyPrint)
+├── app/
+│   └── app.py                   # 🌐 FastAPI REST API server
 ├── templates/
-│   ├── cv_template_tech.html     # Tech industry template
+│   ├── cv_template_tech.html    # Tech template
 │   ├── cv_template_business.html # Business template
-│   └── cv_template_modern.html   # Modern template
+│   └── cv_template_modern.html  # Modern template
 ├── prompts/
-│   ├── cv_optimization.txt       # CV optimization prompt
-│   ├── cv_extraction.txt         # Resume parsing prompt
-│   ├── cv_fix.txt                # Validation fix prompt
-│   └── job_extraction.txt        # Job parsing prompt
+│   ├── cv_optimization_rag.txt  # RAG-enhanced optimization prompt
+│   ├── cv_extraction.txt        # PDF resume parsing prompt
+│   ├── cv_fix.txt               # LLM-based correction prompt
+│   └── job_extraction.txt       # Job info extraction prompt
 ├── data/
-│   └── profile.json              # Your personal information
+│   ├── profile.json             # Your master profile
+│   └── chroma_db/               # Persistent vector database
 ├── output/
-│   └── temp/                     # Generated files
-├── docker-compose.yml            # Docker deployment config
-├── Dockerfile                    # Container image definition
-├── requirements.txt              # Python dependencies
-├── start_api.sh                  # API startup script
-├── test_api_client.py            # API testing client
-├── API_DOCUMENTATION.md          # Complete API docs
-└── DEPLOYMENT.md                 # Deployment guide
+│   ├── cv_output_rag.pdf        # Final generated CV
+│   └── temp/                    # Intermediate JSON files
+├── docs/
+│   ├── FIELD_SCHEMA_REFERENCE.md # JSON field requirements
+│   └── ATS_RESEARCH.md          # ATS optimization notes
+├── Dockerfile                   # Container definition
+├── railway.json                 # Railway deployment config
+├── requirements.txt             # Python dependencies
+└── README.md                    # This file
 ```
 
 ---
@@ -106,34 +233,60 @@ cp .env.example .env
 
 ## 💻 CLI Usage
 
-### Generate CV from Job URL
+### Generate RAG-Enhanced CV from Job URL
 
 ```bash
-python src/main.py --url "https://linkedin.com/jobs/view/123456" --template modern
+python src/main_rag.py --url "https://linkedin.com/jobs/view/123456" --template modern
 ```
 
-### Generate CV from Job Text File
+**What happens:**
+1. Scrapes job posting → extracts keywords
+2. RAG retrieves your 3 most relevant experiences + 4 best projects
+3. LLM optimizes descriptions with job keywords
+4. ATS refiner iterates until 90%+ compatibility
+5. Generates professional PDF
+
+### Generate from Saved Job Description
 
 ```bash
-# Save job description to data/job_description.txt
-python src/main.py --template business
+# Save job text to data/job_description.txt
+python src/main_rag.py --template tech
 ```
 
-### Extract Data from Existing Resume
+### Extract Your Resume from PDF
 
 ```bash
-python src/main.py --resume
-# Outputs structured JSON to data/profile_fetched.json
+python src/main_rag.py --resume
+# Extracts structured data to data/profile_fetched.json
+# Automatically resets RAG database with new content
 ```
 
 ### CLI Options
 
+```bash
+--url URL                    Job posting URL
+--template STYLE             tech | business | modern (default: tech)
+--resume                     Extract CV from PDF resume
+--reset-rag                  Reset vector database (force reindex)
+--no-rag                     Disable RAG (use all content)
+--skip-validation            Skip validation (not recommended)
+--max-retries N              Validation retries (default: 2)
+--embedding-model MODEL      Sentence transformer model (default: all-MiniLM-L6-v2)
 ```
---url URL              Job posting URL
---template TEMPLATE    Template style: tech, business, or modern (default: tech)
---resume               Extract CV data from PDF resume
---skip-validation      Skip CV validation and auto-correction
---max-retries N        Maximum validation retry attempts (default: 2)
+
+### Example Workflow
+
+```bash
+# 1. Extract your resume once
+python src/main_rag.py --resume
+
+# 2. Generate tailored CVs for different jobs
+python src/main_rag.py --url "https://linkedin.com/jobs/ml-engineer" --template tech
+python src/main_rag.py --url "https://indeed.com/backend-developer" --template business
+
+# 3. Check intermediate outputs
+cat output/temp/optimized_profile_rag.json  # Final JSON
+cat output/temp/ats_report.json             # ATS analysis
 ```
 
 ---

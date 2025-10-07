@@ -1,6 +1,7 @@
 import json
 import re
 import os
+import copy
 import replicate
 import PyPDF2
 import pdfplumber
@@ -26,198 +27,6 @@ def load_prompt(name: str) -> str:
         return f.read()
 
 
-def generate_optimized_profile_with_validation(
-    profile: dict, 
-    job_info: dict, 
-    model_name: str,
-    max_retries: int = 2
-) -> dict:
-    """Generate and validate optimized CV with automatic corrections."""
-    
-    for attempt in range(max_retries + 1):
-        print(f"\n{'='*60}")
-        print(f"ATTEMPT {attempt + 1}/{max_retries + 1}")
-        print(f"{'='*60}\n")
-        
-        # Generate
-        cv_data = generate_optimized_profile(profile, job_info, model_name)
-        
-        # Validate
-        is_valid, issues = _validate_cv_strict(cv_data, profile, job_info)
-        
-        if is_valid:
-            print("✅ Validation passed!")
-            return cv_data
-        
-        print(f"\n⚠️ {len(issues)} issues found:")
-        for issue in issues:
-            severity = issue['severity'].upper()
-            print(f"   [{severity}] {issue['message']}")
-        
-        if attempt < max_retries:
-            print(f"\n🔧 Fixing (attempt {attempt + 1}/{max_retries})...")
-            cv_data = _fix_cv_with_llm(cv_data, profile, issues, job_info, model_name)
-        else:
-            print(f"\n🚨 Max retries reached. Emergency fixes...")
-            cv_data = _apply_emergency_fixes(cv_data, profile, issues)
-    
-    # Final validation
-    is_valid, remaining_issues = _validate_cv_strict(cv_data, profile, job_info)
-    if remaining_issues:
-        print(f"\n⚠️ {len(remaining_issues)} issues remain after all fixes")
-    
-    return cv_data
-
-
-def _validate_cv_strict(cv_data: Dict, original_profile: Dict, job_info: Dict) -> Tuple[bool, List[Dict]]:
-    """Strict validation with detailed reporting."""
-    issues = []
-    
-    # 1. Invented experiences
-    orig_exp = {(e.get('title',''), e.get('company','')) for e in original_profile.get('experience',[])}
-    out_exp = {(e.get('title',''), e.get('company','')) for e in cv_data.get('experience',[])}
-    invented_exp = out_exp - orig_exp
-    
-    if invented_exp:
-        for exp in invented_exp:
-            issues.append({
-                "type": "invented_experience",
-                "severity": "critical",
-                "message": f"Invented experience: {exp[0]} at {exp[1]}"
-            })
-    
-    # 2. Invented projects
-    orig_proj = {p.get('name','') for p in original_profile.get('projects',[])}
-    out_proj = {p.get('name','') for p in cv_data.get('projects',[])}
-    invented_proj = out_proj - orig_proj
-    
-    if invented_proj:
-        for proj in invented_proj:
-            issues.append({
-                "type": "invented_project",
-                "severity": "critical",
-                "message": f"Invented project: {proj}"
-            })
-    
-    # 3. Content limits
-    exp_count = len(cv_data.get('experience',[]))
-    proj_count = len(cv_data.get('projects',[]))
-    
-    if exp_count > 3:
-        issues.append({
-            "type": "too_many_experiences",
-            "severity": "high",
-            "message": f"{exp_count} experiences (max 3)"
-        })
-    
-    if proj_count > 4:
-        issues.append({
-            "type": "too_many_projects",
-            "severity": "high",
-            "message": f"{proj_count} projects (max 4)"
-        })
-    
-    if exp_count + proj_count > 7:
-        issues.append({
-            "type": "too_much_content",
-            "severity": "high",
-            "message": f"{exp_count + proj_count} total items (max 7)"
-        })
-    
-    # 4. Bullet limits
-    for i, exp in enumerate(cv_data.get('experience',[])):
-        bullets = len(exp.get('descrition_list',[]))
-        if bullets > 4:
-            issues.append({
-                "type": "too_many_bullets",
-                "severity": "medium",
-                "message": f"Experience {i}: {bullets} bullets (max 4)",
-                "exp_index": i
-            })
-    
-    # 5. Required fields
-    if not cv_data.get('personal_info',{}).get('name'):
-        issues.append({"type": "missing_name", "severity": "critical", "message": "Missing name"})
-    
-    if not cv_data.get('summary','').strip():
-        issues.append({"type": "missing_summary", "severity": "high", "message": "Empty summary"})
-    
-    if exp_count == 0:
-        issues.append({"type": "no_experiences", "severity": "critical", "message": "No experiences"})
-    
-    if proj_count == 0:
-        issues.append({"type": "no_projects", "severity": "high", "message": "No projects"})
-    
-    is_valid = not any(i['severity'] == 'critical' for i in issues)
-    return is_valid, issues
-
-
-def _fix_cv_with_llm(cv_data: Dict, original_profile: Dict, issues: List[Dict], 
-                     job_info: Dict, model_name: str) -> Dict:
-    """LLM-based fix."""
-    prompt_template = load_prompt("cv_fix")
-    issues_text = "\n".join([f"- {i['message']}" for i in issues])
-    
-    prompt = prompt_template.format(
-        issues=issues_text,
-        original_profile=json.dumps(original_profile, indent=2),
-        cv_data=json.dumps(cv_data, indent=2)
-    )
-    
-    try:
-        output = replicate.run(model_name, input={"prompt": prompt})
-        content = "".join([str(x) for x in output]).strip()
-        content = _clean_json(content)
-        return json.loads(content)
-    except Exception as e:
-        print(f"⚠️ LLM fix failed: {e}")
-        return _apply_emergency_fixes(cv_data, original_profile, issues)
-
-
-def _apply_emergency_fixes(cv_data: Dict, original_profile: Dict, issues: List[Dict]) -> Dict:
-    """Hard-coded Python fixes."""
-    corrected = json.loads(json.dumps(cv_data))  # Deep copy
-    
-    print("🚨 Emergency fixes:")
-    
-    # Fix invented experiences
-    orig_exp = {(e.get('title',''), e.get('company','')) for e in original_profile.get('experience',[])}
-    valid_exp = [e for e in corrected.get('experience',[]) 
-                 if (e.get('title',''), e.get('company','')) in orig_exp]
-    if len(valid_exp) < len(corrected.get('experience',[])):
-        print(f"   Removed {len(corrected.get('experience',[])) - len(valid_exp)} invented experiences")
-    corrected['experience'] = valid_exp[:3]
-    
-    # Fix invented projects
-    orig_proj = {p.get('name','') for p in original_profile.get('projects',[])}
-    valid_proj = [p for p in corrected.get('projects',[]) if p.get('name','') in orig_proj]
-    if len(valid_proj) < len(corrected.get('projects',[])):
-        print(f"   Removed {len(corrected.get('projects',[])) - len(valid_proj)} invented projects")
-    corrected['projects'] = valid_proj[:4]
-    
-    # Trim bullets
-    for i, exp in enumerate(corrected.get('experience',[])):
-        bullets = exp.get('descrition_list',[])
-        if len(bullets) > 4:
-            corrected['experience'][i]['descrition_list'] = bullets[:4]
-            print(f"   Trimmed experience {i} bullets to 4")
-    
-    # Restore minimum if too few
-    if len(corrected.get('experience',[])) < 2 and len(original_profile.get('experience',[])) >= 2:
-        corrected['experience'] = original_profile['experience'][:2]
-        print("   Restored minimum 2 experiences")
-    
-    if len(corrected.get('projects',[])) < 3 and len(original_profile.get('projects',[])) >= 3:
-        corrected['projects'] = original_profile['projects'][:3]
-        print("   Restored minimum 3 projects")
-    
-    # Preserve education
-    if not corrected.get('education'):
-        corrected['education'] = original_profile.get('education',[])
-    
-    return corrected
-
-
 def _clean_json(content: str) -> str:
     """Clean markdown from LLM output."""
     if content.startswith("```json"):
@@ -232,6 +41,30 @@ def _clean_json(content: str) -> str:
 def generate_optimized_profile(profile: dict, job_info: dict, model_name: str) -> dict:
     """Generate optimized CV."""
     prompt_template = load_prompt("cv_optimization")
+    prompt = prompt_template.format(
+        profile=json.dumps(profile, indent=2, ensure_ascii=False),
+        job_info=json.dumps(job_info, indent=2, ensure_ascii=False)
+    )
+    
+    output = replicate.run(model_name, input={"prompt": prompt})
+    content = "".join([str(x) for x in output]).strip()
+    content = _clean_json(content)
+    
+    return json.loads(content)
+
+
+def optimize_cv_with_rag(profile: Dict[str, Any], job_info: Dict[str, Any], model_name: str) -> Dict[str, Any]:
+    """
+    Generate optimized CV using RAG-enhanced prompt.
+    This function expects pre-filtered content from the RAG system.
+    """
+    # Check if RAG-specific prompt exists, otherwise fall back to standard
+    try:
+        prompt_template = load_prompt("cv_optimization_rag")
+    except FileNotFoundError:
+        print("RAG prompt not found, using standard prompt")
+        prompt_template = load_prompt("cv_optimization")
+    
     prompt = prompt_template.format(
         profile=json.dumps(profile, indent=2, ensure_ascii=False),
         job_info=json.dumps(job_info, indent=2, ensure_ascii=False)
@@ -301,7 +134,7 @@ def extract_cv_from_pdf_smart(pdf_path: str, model_name: str) -> dict:
                         text += page_text + "\n"
             
             if text.strip():
-                print("✓ Successfully extracted text directly from PDF")
+                print("Successfully extracted text directly from PDF")
                 return text
             else:
                 print("✗ pdfplumber found no text")
@@ -320,7 +153,7 @@ def extract_cv_from_pdf_smart(pdf_path: str, model_name: str) -> dict:
             doc.close()
             
             if text.strip():
-                print("✓ Successfully extracted text using PyMuPDF")
+                print("Successfully extracted text using PyMuPDF")
                 return text
             else:
                 print("✗ PyMuPDF found no text")
@@ -339,7 +172,7 @@ def extract_cv_from_pdf_smart(pdf_path: str, model_name: str) -> dict:
                     text += page.extract_text() + "\n"
             
             if text.strip():
-                print("✓ Successfully extracted text using PyPDF2")
+                print("Successfully extracted text using PyPDF2")
                 return text
             else:
                 print("✗ PyPDF2 found no text")
@@ -361,7 +194,7 @@ def extract_cv_from_pdf_smart(pdf_path: str, model_name: str) -> dict:
                 text += page_text + "\n"
             
             if text.strip():
-                print("✓ Successfully extracted text using OCR")
+                print("Successfully extracted text using OCR")
                 return text
             else:
                 print("✗ OCR found no text")
@@ -394,31 +227,66 @@ def extract_cv_from_pdf_smart(pdf_path: str, model_name: str) -> dict:
     
     return json.loads(content)
     
-    # content = "".join([str(x) for x in output]).strip()
+
+# def enhance_project_descriptions(
+#     profile: dict,
+#     job_keywords: List[str],
+#     model_name: str
+# ) -> dict:
+#     """
+#     Enhance project descriptions to improve RAG retrieval without inventing information.
     
-    # # Clean up potential markdown formatting
-    # if content.startswith("```json"):
-    #     content = content.split("```json")[1]
-    # if content.startswith("```"):
-    #     content = content.split("```")[1]
-    # if content.endswith("```"):
-    #     content = content.rsplit("```", 1)[0]
-    # content = content.strip()
+#     Expands technical details, adds context, and includes relevant keywords
+#     to boost semantic matching while staying truthful to original content.
     
-    # # Parse JSON
-    # try:
-    #     cv_data = json.loads(content)
-    # except json.JSONDecodeError as e:
-    #     raise ValueError(f"LLM did not return valid JSON. Error: {str(e)}\n\nReceived content:\n{content[:500]}...")
+#     Args:
+#         profile: CV profile with projects
+#         job_keywords: Keywords from job description for context
+#         model_name: Replicate model name
     
-    # # Validate required fields
-    # required_fields = ["personal_info", "summary", "education", "experience", "projects", "skills"]
-    # for field in required_fields:
-    #     if field not in cv_data:
-    #         raise ValueError(f"Missing required field in extracted data: {field}")
+#     Returns:
+#         Profile with enhanced project descriptions
+#     """
+#     profile = copy.deepcopy(profile)
     
-    # print("✓ Successfully extracted and formatted CV data\n")
-    # return cv_data
+#     if not profile.get('projects'):
+#         return profile
+    
+#     prompt_template = load_prompt("project_enhancement")
+#     job_keywords_str = ", ".join(job_keywords[:15])  # Top 15 keywords for context
+    
+#     print("Enhancing project descriptions for better RAG retrieval...")
+    
+#     for i, project in enumerate(profile['projects']):
+#         original_desc = project.get('description', '')
+        
+#         if not original_desc or len(original_desc) < 20:
+#             continue  # Skip very short descriptions
+        
+#         prompt = prompt_template.format(
+#             project_name=project.get('name', 'Unknown'),
+#             project_year=project.get('year', 'N/A'),
+#             project_description=original_desc,
+#             job_keywords=job_keywords_str
+#         )
+        
+#         try:
+#             output = replicate.run(model_name, input={"prompt": prompt})
+#             enhanced_desc = "".join([str(x) for x in output]).strip()
+            
+#             # Clean up any markdown or extra formatting
+#             enhanced_desc = enhanced_desc.replace('```', '').strip()
+            
+#             # Only update if we got a reasonable response
+#             if len(enhanced_desc) > len(original_desc) * 0.5:  # At least 50% of original length
+#                 profile['projects'][i]['description'] = enhanced_desc
+#                 print(f"  Enhanced: {project.get('name', 'Unknown')}")
+        
+#         except Exception as e:
+#             print(f"  Skipped {project.get('name', 'Unknown')}: {e}")
+#             continue
+    
+#     return profile
 
 
 def save_cv_to_json(cv_data: dict, output_path: str) -> None:
@@ -432,6 +300,6 @@ def save_cv_to_json(cv_data: dict, output_path: str) -> None:
     try:
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(cv_data, f, indent=2, ensure_ascii=False)
-        print(f"✓ CV data successfully saved to {output_path}")
+        print(f"CV data successfully saved to {output_path}")
     except Exception as e:
         raise ValueError(f"Error saving JSON file: {str(e)}")

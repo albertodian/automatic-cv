@@ -9,7 +9,7 @@ This API provides endpoints to:
 """
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Query
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl, Field
 from typing import Optional, List, Dict, Any
@@ -31,14 +31,22 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 project_root = os.path.join(os.path.dirname(__file__), '..')
 os.chdir(project_root)
 
-from src.data_loader import load_profile
+from utils import load_profile
 from src.job_parser import fetch_job_description
 from src.llm_agent import (
-    generate_optimized_profile_with_validation,
+    generate_optimized_profile,
     extract_relevant_job_info,
     extract_cv_from_pdf_smart,
 )
-from src.renderer import render_cv_pdf_html, render_cover_letter_pdf
+from src.structure_validator import fix_cv
+from src.renderer import render_cv_pdf_html, render_cv_pdf_memory
+from src.ats_optimizer import (
+    optimize_profile_for_ats,
+    predict_ats_score,
+    validate_ats_structure,
+    refine_cv_for_ats,
+    get_ats_summary
+)
 
 # Initialize FastAPI app with settings from config
 app = FastAPI(
@@ -310,25 +318,36 @@ async def generate_cv(request: GenerateCVRequest):
         )
         
         # Generate optimized profile
-        if request.skip_validation:
-            from src.llm_agent import generate_optimized_profile
-            optimized_profile = generate_optimized_profile(
-                profile_dict, 
-                job_info, 
-                request.model_name
+        optimized_profile = generate_optimized_profile(
+            profile_dict, 
+            job_info, 
+            request.model_name
+        )
+        
+        # Apply validation and fixes if not skipped
+        if not request.skip_validation:
+            optimized_profile, fix_messages = fix_cv(
+                profile=optimized_profile,
+                original_profile=profile_dict,
+                auto_fix=True
             )
-        else:
-            optimized_profile = generate_optimized_profile_with_validation(
-                profile=profile_dict,
-                job_info=job_info,
-                model_name=request.model_name,
-                max_retries=request.max_retries
-            )
+            if fix_messages:
+                print("Applied fixes:", ", ".join(fix_messages))
+        
+        # Apply ATS iterative refinement to achieve 90%+ score
+        optimized_profile, ats_result, iterations = refine_cv_for_ats(
+            profile=optimized_profile,
+            job_keywords=job_info.get('keywords', []),
+            model_name=request.model_name,
+            max_iterations=3,
+            target_score=90.0,
+            min_improvement=5.0
+        )
         
         return CVResponse(
             success=True,
             profile=optimized_profile,
-            message="CV successfully generated and optimized"
+            message=f"CV successfully generated! ATS Score: {ats_result['score']:.1f}% (Iterations: {iterations})"
         )
     
     except Exception as e:
@@ -366,31 +385,140 @@ async def generate_cv_from_url(request: GenerateCVFromURLRequest):
         job_info = extract_relevant_job_info(job_text, request.model_name)
         
         # Generate optimized profile
-        if request.skip_validation:
-            from src.llm_agent import generate_optimized_profile
-            optimized_profile = generate_optimized_profile(
-                profile_dict,
-                job_info,
-                request.model_name
+        optimized_profile = generate_optimized_profile(
+            profile_dict,
+            job_info,
+            request.model_name
+        )
+        
+        # Apply validation and fixes if not skipped
+        if not request.skip_validation:
+            optimized_profile, fix_messages = fix_cv(
+                profile=optimized_profile,
+                original_profile=profile_dict,
+                auto_fix=True
             )
-        else:
-            optimized_profile = generate_optimized_profile_with_validation(
-                profile=profile_dict,
-                job_info=job_info,
-                model_name=request.model_name,
-                max_retries=request.max_retries
-            )
+            if fix_messages:
+                print("Applied fixes:", ", ".join(fix_messages))
+        
+        # Apply ATS iterative refinement to achieve 90%+ score
+        optimized_profile, ats_result, iterations = refine_cv_for_ats(
+            profile=optimized_profile,
+            job_keywords=job_info.get('keywords', []),
+            model_name=request.model_name,
+            max_iterations=3,
+            target_score=90.0,
+            min_improvement=5.0
+        )
         
         return CVResponse(
             success=True,
             profile=optimized_profile,
-            message="CV successfully generated from job URL"
+            message=f"CV successfully generated from URL! ATS Score: {ats_result['score']:.1f}% (Iterations: {iterations})"
         )
     
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"Error generating CV from URL: {str(e)}"
+        )
+
+# ============================================================================
+# ATS Optimization Endpoints
+# ============================================================================
+
+@app.post("/api/cv/ats-score", tags=["ATS Optimization"])
+async def get_ats_score(
+    profile: ProfileData,
+    job_keywords: List[str] = Query(..., description="Keywords from job posting")
+):
+    """
+    Predict ATS compatibility score for a CV.
+    
+    Returns:
+    - Overall ATS score (0-100%)
+    - Matched vs missing keywords
+    - Keyword density analysis
+    - Actionable recommendations
+    """
+    try:
+        cv_text = json.dumps(profile.model_dump())
+        ats_result = predict_ats_score(cv_text, job_keywords)
+        
+        return JSONResponse(content=ats_result)
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error calculating ATS score: {str(e)}"
+        )
+
+@app.post("/api/cv/ats-optimize", response_model=CVResponse, tags=["ATS Optimization"])
+async def optimize_cv_for_ats(
+    profile: ProfileData,
+    job_keywords: List[str] = Query(..., description="Keywords from job posting")
+):
+    """
+    Optimize CV for ATS systems.
+    
+    Applies:
+    - Abbreviation expansion (ML → Machine Learning (ML))
+    - Keyword optimization
+    - Structure validation
+    
+    Returns optimized CV with ATS score.
+    """
+    try:
+        profile_dict = profile.model_dump()
+        
+        # Apply ATS iterative refinement to achieve 90%+ score
+        optimized_profile, ats_result, iterations = refine_cv_for_ats(
+            profile=profile_dict,
+            job_keywords=job_keywords,
+            model_name="openai/gpt-4.1-mini",
+            max_iterations=3,
+            target_score=90.0,
+            min_improvement=5.0
+        )
+        
+        return CVResponse(
+            success=True,
+            profile=optimized_profile,
+            message=f"CV ATS-optimized! Score: {ats_result['score']:.1f}% (Iterations: {iterations})"
+        )
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error optimizing CV for ATS: {str(e)}"
+        )
+
+@app.post("/api/cv/ats-validate", tags=["ATS Optimization"])
+async def validate_cv_structure(profile: ProfileData):
+    """
+    Validate CV structure for ATS compatibility.
+    
+    Checks:
+    - Required sections (Experience, Education, Skills)
+    - Contact information
+    - Date formatting
+    - Skills count
+    
+    Returns list of warnings/recommendations.
+    """
+    try:
+        profile_dict = profile.model_dump()
+        warnings = validate_ats_structure(profile_dict)
+        
+        return {
+            "is_valid": all("✅" in w for w in warnings),
+            "warnings": warnings
+        }
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error validating CV structure: {str(e)}"
         )
 
 # ============================================================================
@@ -442,6 +570,41 @@ async def render_cv(
             path=str(output_path),
             media_type="application/pdf",
             filename=output_filename
+        )
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error rendering CV: {str(e)}"
+        )
+
+@app.post("/api/cv/render-stream", tags=["CV Rendering"])
+async def render_cv_stream(
+    profile: ProfileData,
+    template: str = Query(default=settings.DEFAULT_TEMPLATE, description="Template: tech, business, or modern"),
+    filename: str = Query(default="cv_output.pdf", description="PDF filename")
+):
+    """
+    Render CV to PDF - IN MEMORY (Railway-ready).
+    
+    Generates PDF without saving to disk. Perfect for ephemeral storage platforms.
+    Returns streaming PDF response.
+    """
+    try:
+        if template not in settings.AVAILABLE_TEMPLATES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid template. Available: {', '.join(settings.AVAILABLE_TEMPLATES)}"
+            )
+        
+        # Generate PDF in memory
+        pdf_buffer = render_cv_pdf_memory(profile.model_dump(), template)
+        
+        # Stream directly to client
+        return StreamingResponse(
+            pdf_buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
     
     except Exception as e:
