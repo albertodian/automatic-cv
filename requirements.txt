@@ -37,3 +37,6 @@ playwright>=1.40.0
 # OCR
 pytesseract>=0.3.10
 pdf2image>=1.16.0
+
+# Auth and Storage
+supabase==2.3.0
