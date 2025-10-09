@@ -17,7 +17,7 @@ replicate>=0.20.0
 # RAG System
 chromadb>=0.4.22
 sentence-transformers>=2.2.2
-numpy>=1.24.0
+numpy>=1.24.0,<2.0
 
 # PDF extraction
 PyPDF2>=3.0.0
