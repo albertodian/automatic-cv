@@ -73,6 +73,16 @@ curl http://localhost:8000/health
 |--------|----------|---------|---------------|
 | GET | `/` | API info | No |
 | GET | `/health` | Health check | No |
+| POST | `/api/v1/auth/signup` | Create Supabase user (returns access/refresh tokens + token balance) | Yes |
+| POST | `/api/v1/auth/signin` | Authenticate user (returns tokens + balance) | Yes |
+| POST | `/api/v1/auth/signout` | Revoke session (requires auth header) | No |
+| GET | `/api/v1/profile` | Fetch stored profile for authenticated user | No |
+| POST | `/api/v1/profile` | Create or upsert profile | Yes |
+| PUT | `/api/v1/profile` | Update profile | Yes |
+| DELETE | `/api/v1/profile` | Delete profile | No |
+| GET | `/api/v1/tokens` | Retrieve token balance | No |
+| POST | `/api/v1/tokens/add` | Add tokens to balance | Yes |
+| POST | `/api/v1/tokens/deduct` | Deduct tokens from balance | Yes |
 | POST | `/api/job/fetch` | Fetch job from URL | Yes |
 | POST | `/api/job/parse` | Parse job text | Query param |
 | POST | `/api/cv/extract` | Extract CV from PDF | File upload |
@@ -120,7 +130,157 @@ Health check endpoint
 
 ---
 
-#### 2. Job Description Endpoints
+#### 2. Authentication & Session Endpoints
+
+All authentication routes live under the `/api/v1` prefix and require the Supabase project keys to be present in `.env`.
+
+> **Headers:** Authenticated calls expect `Authorization: Bearer <access_token>` using the token returned at sign-in/up.
+
+##### `POST /api/v1/auth/signup`
+Create a Supabase user, seed a zero token balance, and return the session pair.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "strongPassword123"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
+  "user": {
+    "id": "8d4e1aa2-...",
+    "email": "user@example.com",
+    "created_at": "2025-10-09T10:35:12.345678Z"
+  },
+  "token": 0
+}
+```
+
+##### `POST /api/v1/auth/signin`
+Authenticate an existing user and fetch the current token balance.
+
+**Request Body:** Same shape as sign-up.
+
+**Success Response (200):** Identical structure to sign-up, with the latest `token` count.
+
+##### `POST /api/v1/auth/signout`
+Revokes the active Supabase session.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Response:**
+```json
+{
+  "message": "Successfully signed out"
+}
+```
+
+---
+
+#### 3. Profile Storage Endpoints
+
+Profile endpoints persist each user’s structured CV in Supabase. Every route requires authentication.
+
+Common headers:
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+##### `GET /api/v1/profile`
+Fetch the stored profile for the authenticated user.
+
+**Response (200):**
+```json
+{
+  "id": "d0c5bd7f-...",
+  "user_id": "8d4e1aa2-...",
+  "profile_data": { ... },
+  "created_at": "2025-10-09T10:40:00Z",
+  "updated_at": "2025-10-09T10:40:00Z"
+}
+```
+
+##### `POST /api/v1/profile`
+Create or upsert the profile. The payload mirrors the `ProfileData` schema used by generation endpoints.
+
+**Request Body (truncated):**
+```json
+{
+  "personal_info": {
+    "name": "Jane Doe",
+    "email": "jane@example.com",
+    "phone": "+39 340 000 0000"
+  },
+  "summary": "Product-minded AI engineer...",
+  "education": [ ... ],
+  "experience": [ ... ],
+  "projects": [ ... ],
+  "skills": [ ... ]
+}
+```
+
+##### `PUT /api/v1/profile`
+Explicit update when you know the record already exists. Payload matches the POST body.
+
+##### `DELETE /api/v1/profile`
+Remove the stored profile. Returns:
+```json
+{
+  "message": "Profile deleted successfully"
+}
+```
+
+---
+
+#### 4. Token Balance Endpoints
+
+Token routes expose the credit system used to meter paid features. All require authentication.
+
+##### `GET /api/v1/tokens`
+Returns the user’s current balance and the timestamp of the last change.
+
+```json
+{
+  "token": 12,
+  "updated_at": "2025-10-09T11:15:00+00:00"
+}
+```
+
+##### `POST /api/v1/tokens/add`
+Increase the balance, typically after a successful purchase.
+
+**Request Body:**
+```json
+{
+  "amount": 5
+}
+```
+
+##### `POST /api/v1/tokens/deduct`
+Consume tokens when a paid action completes. If the user lacks sufficient balance, the API returns `400` with `"Insufficient token balance"`.
+
+**Request Body:** Same as `/tokens/add`.
+
+**Success Response:**
+```json
+{
+  "token": 7,
+  "updated_at": "2025-10-09T11:20:42+00:00"
+}
+```
+
+---
+
+#### 5. Job Description Endpoints
 
 ##### `POST /api/job/fetch`
 Fetch and parse job description from URL
@@ -166,7 +326,7 @@ Parse raw job description text into structured format
 
 ---
 
-#### 3. CV Extraction Endpoint
+#### 6. CV Extraction Endpoint
 
 ##### `POST /api/cv/extract`
 Extract CV data from uploaded PDF resume
@@ -206,7 +366,7 @@ curl -X POST http://localhost:8000/api/cv/extract \
 
 ---
 
-#### 4. CV Generation Endpoints
+#### 7. CV Generation Endpoints
 
 **🚀 All CV generation endpoints now use RAG (Retrieval-Augmented Generation)!**
 
@@ -416,7 +576,7 @@ Loads profile from server file and fetches job from URL.
 
 ---
 
-#### 5. ATS Optimization Endpoints
+#### 8. ATS Optimization Endpoints
 
 ##### `POST /api/cv/ats-score`
 Predict ATS compatibility score for a CV
@@ -474,7 +634,7 @@ Profile data
 
 ---
 
-#### 6. CV Rendering Endpoints
+#### 9. CV Rendering Endpoints
 
 ##### `POST /api/cv/render`
 Render CV to PDF format (saves to disk)

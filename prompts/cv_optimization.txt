@@ -13,6 +13,7 @@ CRITICAL CONSTRAINTS:
    - Maximum 2-3 experiences (select from input array)
    - Maximum 3-4 projects (select from input array)
    - Maximum 3-4 bullets per experience
+   - Each bullet must stay under 22 words and focus on a single accomplishment
    - Total items: 5-7 (experiences + projects)
 
 3. EDUCATION CONDENSING (when applicable)
@@ -42,7 +43,8 @@ Step 5: Enhance selected items
    - Keep titles, companies, names EXACT
    - Add keywords to descriptions naturally
    - Update skills arrays (max 10 per item, mixed placement)
-   - Limit to 3-4 bullets per experience
+   - Limit to 3-4 bullets per experience (≤22 words each)
+   - Project descriptions must be max 35 words and favour metrics over narrative
 
 Step 6: Build skills array (20-25 total)
    - Mix new keywords throughout (NOT at end)
@@ -50,6 +52,7 @@ Step 6: Build skills array (20-25 total)
 
 Step 7: Write summary (EXACTLY 2 sentences)
    - Include 3-4 critical keywords
+   - Keep BOTH sentences under 18 words each (≤36 words total)
    - Focus on capabilities: "specializing in", "skilled in"
    - AVOID "experienced in" unless documented
 

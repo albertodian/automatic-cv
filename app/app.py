@@ -8,7 +8,7 @@ This API provides endpoints to:
 - Render CVs to PDF format
 """
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Query
+from fastapi import FastAPI, HTTPException, UploadFile, File, Query, Depends
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl, Field
@@ -47,6 +47,16 @@ from src.ats_optimizer import (
 )
 from src.rag_system import CVRAGSystem, RAGEnhancedGenerator
 
+# Import backend routes and dependencies
+try:
+    from backend.routes import router as backend_router
+    from backend.auth import get_current_user, get_optional_user
+    from backend.profile_service import ProfileService
+    BACKEND_AVAILABLE = True
+except ImportError:
+    BACKEND_AVAILABLE = False
+    print("⚠️  Backend not available. Install: pip install supabase")
+
 # Initialize FastAPI app with settings from config
 app = FastAPI(
     title=settings.API_TITLE,
@@ -64,6 +74,13 @@ app.add_middleware(
     allow_methods=settings.CORS_METHODS,
     allow_headers=settings.CORS_HEADERS,
 )
+
+# Include backend routes if available
+if BACKEND_AVAILABLE:
+    app.include_router(backend_router, prefix="/api/v1", tags=["Backend"])
+    print("✅ Backend routes integrated: /api/v1")
+else:
+    print("⚠️  Backend routes not available")
 
 # ============================================================================
 # Pydantic Models (Request/Response schemas)
@@ -128,7 +145,6 @@ class GenerateCVRequest(BaseModel):
     profile: ProfileData = Field(..., description="Candidate profile data")
     job_description: str = Field(..., description="Job description text")
     template: str = Field(default=settings.DEFAULT_TEMPLATE, description="Template type: tech, business, or modern")
-    skip_validation: bool = Field(default=False, description="Skip CV validation")
     max_retries: int = Field(default=settings.MAX_RETRIES, description="Max validation retry attempts")
     model_name: str = Field(default=settings.DEFAULT_MODEL, description="LLM model to use")
 
@@ -920,6 +936,189 @@ async def generate_cv_from_file_url(request: GenerateCVFromFileURLRequest):
             status_code=500,
             detail=f"Error generating CV from file and URL: {str(e)}"
         )
+
+# ============================================================================
+# Authenticated CV Generation Endpoints (Uses Profile from Database)
+# ============================================================================
+
+if BACKEND_AVAILABLE:
+    
+    @app.post("/api/cv/generate-authenticated", response_model=CVResponse, tags=["CV Generation (Authenticated)"])
+    async def generate_cv_authenticated(
+        job_description: str = Field(..., description="Job description text"),
+        template: str = Field(default=settings.DEFAULT_TEMPLATE, description="Template type"),
+        skip_validation: bool = Field(default=False, description="Skip CV validation"),
+        model_name: str = Field(default=settings.DEFAULT_MODEL, description="LLM model to use"),
+        current_user: Dict[str, Any] = Depends(get_current_user)
+    ):
+        """
+        Generate optimized CV using profile from database (AUTHENTICATED).
+        
+        This endpoint:
+        1. Loads user's profile from Supabase database
+        2. Parses job description
+        3. Uses RAG to retrieve relevant content
+        4. Generates optimized CV with LLM
+        5. Validates structure
+        6. Applies ATS optimization
+        7. Returns final JSON
+        
+        User must be authenticated. Profile must exist in database.
+        """
+        try:
+            # Load profile from database
+            profile_data = ProfileService.get_profile(current_user["id"])
+            
+            if not profile_data:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Profile not found. Please create a profile first using POST /api/v1/profile"
+                )
+            
+            profile_dict = profile_data["profile_data"]
+            
+            # Parse job description
+            job_info = extract_relevant_job_info(job_description, model_name)
+            
+            # RAG-enhanced generation
+            rag_system = CVRAGSystem()
+            rag_system.reset_database()
+            rag_system.index_profile(profile_dict)
+            
+            rag_generator = RAGEnhancedGenerator(rag_system)
+            
+            optimized_profile = rag_generator.generate_optimized_profile_with_rag(
+                profile=profile_dict,
+                job_info=job_info,
+                llm_function=generate_optimized_profile,
+                model_name=model_name
+            )
+            
+            # Validation
+            if not skip_validation:
+                optimized_profile, fix_messages = fix_cv(
+                    profile=optimized_profile,
+                    original_profile=profile_dict,
+                    auto_fix=True
+                )
+            
+            # ATS optimization
+            optimized_profile, ats_result, iterations = refine_cv_for_ats(
+                profile=optimized_profile,
+                job_keywords=job_info.get('keywords', []),
+                model_name=model_name,
+                max_iterations=3,
+                target_score=90.0,
+                min_improvement=5.0
+            )
+            
+            return CVResponse(
+                success=True,
+                profile=optimized_profile,
+                message=f"CV generated from database profile! ATS Score: {ats_result['score']:.1f}% (Iterations: {iterations})"
+            )
+        
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error generating CV: {str(e)}"
+            )
+    
+    
+    @app.post("/api/cv/generate-authenticated-from-url", response_model=CVResponse, tags=["CV Generation (Authenticated)"])
+    async def generate_cv_authenticated_from_url(
+        job_url: HttpUrl = Field(..., description="URL of the job posting"),
+        template: str = Field(default=settings.DEFAULT_TEMPLATE, description="Template type"),
+        skip_validation: bool = Field(default=False, description="Skip CV validation"),
+        model_name: str = Field(default=settings.DEFAULT_MODEL, description="LLM model to use"),
+        current_user: Dict[str, Any] = Depends(get_current_user)
+    ):
+        """
+        Generate optimized CV from job URL using profile from database (AUTHENTICATED).
+        
+        This endpoint:
+        1. Loads user's profile from database
+        2. Fetches job description from URL
+        3. Parses job requirements
+        4. Uses RAG to retrieve relevant content
+        5. Generates optimized CV with LLM
+        6. Validates structure
+        7. Applies ATS optimization
+        8. Returns final JSON
+        
+        User must be authenticated. Profile must exist in database.
+        """
+        try:
+            # Load profile from database
+            profile_data = ProfileService.get_profile(current_user["id"])
+            
+            if not profile_data:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Profile not found. Please create a profile first using POST /api/v1/profile"
+                )
+            
+            profile_dict = profile_data["profile_data"]
+            
+            # Fetch job from URL
+            job_text = fetch_job_description(str(job_url))
+            
+            if not job_text:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Failed to fetch job description from URL"
+                )
+            
+            # Parse job description
+            job_info = extract_relevant_job_info(job_text, model_name)
+            
+            # RAG-enhanced generation
+            rag_system = CVRAGSystem()
+            rag_system.reset_database()
+            rag_system.index_profile(profile_dict)
+            
+            rag_generator = RAGEnhancedGenerator(rag_system)
+            
+            optimized_profile = rag_generator.generate_optimized_profile_with_rag(
+                profile=profile_dict,
+                job_info=job_info,
+                llm_function=generate_optimized_profile,
+                model_name=model_name
+            )
+            
+            # Validation
+            if not skip_validation:
+                optimized_profile, fix_messages = fix_cv(
+                    profile=optimized_profile,
+                    original_profile=profile_dict,
+                    auto_fix=True
+                )
+            
+            # ATS optimization
+            optimized_profile, ats_result, iterations = refine_cv_for_ats(
+                profile=optimized_profile,
+                job_keywords=job_info.get('keywords', []),
+                model_name=model_name,
+                max_iterations=3,
+                target_score=90.0,
+                min_improvement=5.0
+            )
+            
+            return CVResponse(
+                success=True,
+                profile=optimized_profile,
+                message=f"CV generated from database profile and job URL! ATS Score: {ats_result['score']:.1f}% (Iterations: {iterations})"
+            )
+        
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error generating CV from URL: {str(e)}"
+            )
 
 # ============================================================================
 # Main Entry Point

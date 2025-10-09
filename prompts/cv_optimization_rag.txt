@@ -21,6 +21,7 @@ CRITICAL CONSTRAINTS:
    - If >3 experiences: Keep top 3 by relevance score
    - If >4 projects: Keep top 4 by relevance score
    - Maximum 3-4 bullets per experience
+   - Each bullet must stay under 22 words, capturing one quantifiable accomplishment
    - Total items: 5-7 (experiences + projects)
 
 3. SKILLS OPTIMIZATION (ATS-Critical)
@@ -58,7 +59,8 @@ Step 3: Enhance ALL provided items (ATS-focused)
    - Keep structure identical (titles, companies, names)
    - Weave keywords into descriptions naturally (aim for 3-5 mentions each)
    - Add quantifiable metrics where appropriate (numbers boost ATS)
-   - Limit to 3-4 bullets per experience
+   - Limit to 3-4 bullets per experience (≤22 words each)
+   - Project description fields must be ≤35 words with metrics up front
    - Use action verbs: "Developed", "Implemented", "Optimized", "Led"
    - **Keyword density check**: Ensure each critical keyword appears 2-5 times
 
@@ -74,6 +76,7 @@ Step 4: Build skills array (ATS-Critical)
 
 Step 5: Write summary (EXACTLY 2 sentences)
    - Include 4-5 CRITICAL job keywords (not just 3-4)
+   - Keep BOTH sentences under 18 words each (≤36 words total)
    - Focus on capabilities matching job requirements
    - Use "specializing in" or "skilled in"
    - Avoid "experienced in" unless documented
