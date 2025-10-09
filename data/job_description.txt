@@ -1,25 +1,107 @@
-At RapidSOS, we are committed to using technology to build a safer, stronger future and working together to save lives. We’re in an exciting phase of growth, welcoming new members from across the globe to our mission-driven, ambitious, and inclusive team. Our work is founded on our values of trust and safety, pioneering, urgency, and purpose over pride, all of which support a company culture where people can innovate, collaborate, grow, and, above all, make an impact. If that sounds like an exciting opportunity, we want to hear from you!
+👋 Chi siamo
 
-At RapidSOS, we are empowering safer, stronger communities with faster, data-driven emergency response. In partnership with public safety, RapidSOS created the world’s first intelligent safety platform that securely links life-saving data from 600 million+ connected devices, apps and sensors and 200+ technology partners directly to RapidSOS Safety Agents, 911, and first responders globally. The platform is used by over 22,000+ first responder agencies in six countries and supports 171 million+ emergencies each year. Whether there’s an unsafe moment or an emergency, RapidSOS Ready devices, vehicles, homes, or buildings deliver essential data to the right place when it matters most. 
 
-What this role is about:
-RapidSOS is revolutionizing emergency response by seamlessly connecting life-saving data from connected devices, apps, and sensors directly to 911, empowering first responders with critical real-time information to save lives faster and more effectively.
 
-We are seeking an enthusiastic AI Senior Software Engineer with a focus on building high quality software to join our team. You will develop AI-driven solutions that enhance the efficiency and effectiveness of emergency call centers. Your work will directly impact call takers and other stakeholders in the Emergency response domain, making their jobs easier through the infusion of AI and data. If you're someone who isn't afraid to get hands-on with various technologies and loves solving complex problems using modern data and AI stacks, we'd love to hear from you!
+Siamo una startup, una tech company e un gruppo di persone determinato ad avere un impatto positivo sulla società. Siamo anche uno dei centri medici più grandi in Italia, con più di 1.200.000 sedute svolte negli ultimi quattro anni.
+Cerchiamo di aiutare le persone a prendersi cura della mente e del corpo. Usiamo la tecnologia per rimuovere gli ostacoli pratici e la comunicazione per affrontare quelli culturali. Poi viene la parte difficile: ma per fortuna possiamo contare su una rete di migliaia di professionisti esperti, tutti selezionati dal nostro team clinico.
+Serenis è stata creata da due second-time founders: Silvia Wang e Daniele Francescon. Numeri alla mano, oggi è una delle migliori startup in Europa. Ha ovviamente dei difetti su cui lavoriamo tutti i giorni, e che ci aiuterai a smussare.
+Sappiamo di avere una grande responsabilità. Per questo crediamo nei dati, nell’innovazione e nei lavori fatti bene – fatti bene da persone che tengono a quello che fanno.
 
-What you’ll do: 
 
-Develop with AI: Build quality software. Identify best sources of intelligence for our applications, design for robustness and continuous improvement.
-Leverage data: RapidSOS has vast datasets of emergency calls and payloads from digital sensors to identify patterns and insights that can improve response times and outcomes. Fuse internal and external data (e.g. hurricane forecast) to provide optimal decision support to call takers. 
-Work across the stack: Leverage AI to build components outside your comfort zone.
-Collaboration: Work closely with cross-functional teams, including other software developers, data engineers, and emergency response professionals, to integrate AI solutions seamlessly into the RapidSOS platform.
-Innovation: Stay updated on the latest AI advancements and assess their applicability to our mission of enhancing public safety.
-What we’re looking for in our ideal candidate: 
+🎯 Cosa farai
 
-Educational Background: Bachelor's or Master's degree in Computer Science, Artificial Intelligence, Data Science, or a related field.
-Technical Proficiency: Strong programming skills in Python. Experience with leveraging modern LLMs. Production experience with LLMs, including debugging, performance management, continuous improvement. Proven experience in delivering projects end to end in collaboration with stakeholders. Ability to adapt and tackle a wide range of challenges, even in unfamiliar tech stacks.
-Ability to tackle multimodal data: We have structured/unstructured data, audio, video modalities all being produced in real-time.
-Familiarity with data warehouses: DataBricks preferred but we’re happy to bring a great candidate up to speed!
-Communication: Excellent verbal and written communication skills, with the ability to convey complex technical concepts to non-technical stakeholders. Self-starter with a proactive & creative approach to problem-solving and a strong sense of ownership.
-Travel & On-call: Ability and willingness to travel for internal team gatherings a few days per quarter. Ability and willingness to be on-call on a weekly rotational basis. 
-Please note that we are open to hiring at different levels for this role! 
+
+
+Entrerai a far parte del team Innovation di Serenis, completando una squadra che ha il focus principale di portare innovazione (AI in primis ma non solo) sia nel prodotto che nel team Serenis.
+Lavorerai a diretto contatto con il Chief Innovation Officer e con gli altri AI Engineers/Developers, ma sarai a stretto contatto anche con molti altri team, specialmente Engineering e Product.
+C'è tanto da fare e dobbiamo essere bravi a prioritizzare e produrre. È una momento unico in cui entrare per avere un impatto concreto e lavorare ad innovazioni molto ambiziose. Ti occuperai principalmente, ma non solo, di:
+
+
+Model Selection e Benchmarking: valutare e confrontare diversi LLM (GPT, Claude, Llama, Gemini, Mistral, etc.) attraverso benchmark personalizzati sui nostri casi d'uso. Definire metriche di performance specifiche per il dominio healthcare e implementare framework di testing automatizzati.
+Fine-tuning e Ottimizzazione: progettare e implementare strategie di fine-tuning per modelli open-source, gestire dataset di training domain-specific, e ottimizzare le performance attraverso tecniche come LoRA e QLoRA.
+Architettura AI e MLOps: progettare pipeline end-to-end per il deployment di LLM in produzione, implementare sistemi di monitoring e observability, gestire A/B testing.
+RAG e Knowledge Systems: sviluppare sistemi di Retrieval-Augmented Generation, implementare strategie di chunking e retrieval avanzate.
+Costruzione di AI Agents: progettare e sviluppare agenti che possano automatizzare processi interni, assistere utenti e professionisti, e migliorare l'efficienza dei nostri servizi.
+Context Engineering e ottimizzazione: progettare architetture di contesto complesse, gestire e ottimizzare l'interazione con i modelli attraverso tecniche di prompt engineering avanzate
+AI Safety e Governance: implementare guardrails per modelli AI in ambito healthcare, sviluppare sistemi di detection per output inappropriati, gestire compliance e audit trail per decisioni AI-assisted.
+
+
+🦄 Ci piacerai se
+
+
+
+Hai già esperienze in ambito di LLM, con conoscenza pratica di fine-tuning, famiglie di modelli (transformers-based, MoE) e tecniche di ottimizzazione.
+Hai fame di fare, di provare, di sporcarti le mani e di vedere il risultato del tuo lavoro.
+Hai un’attitudine da problem-solver: pragmatismo e proattività rendono ogni problema un’opportunità.
+Orientamento alla sperimentazione e innovazione: done it’s better than perfect.
+Hai il giusto mix di ambizione e umiltà.
+Giochi di squadra, che vuol dire che metti il team davanti ad ogni individuo singolo.
+Ti ritrovi nei nostri valori: https://www.serenis.it/chi-siamo
+Sei una brava persona (questo vale quanto tutto il resto, e per certi versi anche di più).
+
+
+🛠️ Stack & Skillsets
+
+
+
+Programmazione avanzata in Python con focus su sviluppo di applicazioni AI/ML. Bonus per padronanza di Typescript e Terraform.
+Esperienza hands-on con LLM: hai già lavorato con modelli come GPT, Claude, Llama, Mistral, Gemini. Sai quando usare open source vs proprietari, conosci le loro differenze pratiche e hai esperienza con fine-tuning base su casi d'uso specifici.
+Sviluppo di applicazioni AI: esperienza con framework come LangChain, LlamaIndex, HuggingFace per costruire soluzioni production-ready.
+API e sistemi distribuiti: padronanza di FastAPI/Flask, esperienza con architetture scalabili, caching, e gestione del carico per applicazioni AI.
+Cloud e deployment: esperienza con almeno una cloud platform (AWS, GCP, Azure) per deployment, monitoring e gestione di applicazioni AI.
+Context Engineering: sai progettare sistemi con prompt complessi e implementare tecniche avanzate come RAG e few-shot learning.
+Database e gestione dati: conoscenza di database relazionali e NoSQL, gestione di embeddings e vector databases.
+Testing e benchmarking: capacità di progettare framework di testing per modelli AI, implementare metriche di valutazione specifiche per il dominio healthcare.
+Sicurezza e compliance: comprensione pratica dei principi di AI safety, implementazione di guardrails, e gestione di audit trail per applicazioni healthcare.
+Performance optimization: esperienza nell'ottimizzazione di costi e latenza per sistemi AI in produzione.
+
+
+📦 Come lavoriamo
+
+
+
+Non ci piacciono le gerarchie: preferiamo il gioco di squadra.
+Non ci piace neanche la burocrazia: preferiamo il senso di responsabilità.
+Ci piacciono i numeri: tanto.
+Ci piacciono anche l’umiltà, l’empatia, la voglia di mettersi in discussione, di imparare cose nuove, di sporcarsi le mani quando serve. Poi le laviamo.
+
+
+❤️ Cosa offriamo
+
+
+
+Una RAL di 40-55k. Per profili straordinari potremmo fare qualcosa di più.
+La nostra policy è “Work From Anywhere”: cioè lavora dove vuoi, l’importante è che lavori bene.
+Conoscerai ogni aspetto del business con una trasparenza che ti sorprenderà.
+Sarai parte di quello che pensiamo possa diventare un grande caso di successo (e che in parte lo è già: ma c’è ancora molto da fare).
+Tante persone di talento a cui rubare competenze, idee, metodi di lavoro (soldi no, per favore. Magari qualche matita).
+La soddisfazione di costruire qualcosa di bello e di utile, con un impatto concreto sulla società.
+Se saprai meritarle, molte opportunità di crescita.
+
+
+🎁 Ma anche
+
+
+
+Sedute di terapia, visite di psichiatria e visite nutrizionali gratis, se ti servono.
+Ferie libere e flessibilità totale.
+1 mese in più di maternità e paternità rispetto a quanto previsto per legge.
+Ogni 3 mesi un paio di giorni tutti insieme, a spese dell’azienda (ma non nel weekend: nel weekend si riposa)
+La dotazione IT che ti serve per fare il tuo lavoro al meglio.
+Tante convenzioni aziendali.
+Credito welfare.
+
+
+🌑 Per favore, togli dal CV
+
+
+
+La foto.
+La data di nascita.
+Lo stato coniugale o familiare.
+Altri aspetti identitari che non hanno a che fare con la posizione, come la religione o l'orientamento sessuale.
+
+
+Per due ragioni: la prima è che pensiamo che non sia né giusto né utile considerare questi parametri in un processo di assunzione. La seconda è che non siamo immuni dai pregiudizi, e vogliamo imparare a farne a meno.
+(Poi sì, se la selezione andrà avanti dovremo vederci in faccia, prima o poi; e sì, dalle esperienze lavorative è possibile ricavare l’età. Il senso non è assumere al buio, ma concentrarsi sugli aspetti significativi invece che su quelli superficiali, soprattutto all’inizio).
+Grazie di aver letto fino a qui 💜

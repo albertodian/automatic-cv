@@ -145,7 +145,6 @@ class GenerateCVRequest(BaseModel):
     profile: ProfileData = Field(..., description="Candidate profile data")
     job_description: str = Field(..., description="Job description text")
     template: str = Field(default=settings.DEFAULT_TEMPLATE, description="Template type: tech, business, or modern")
-    skip_validation: bool = Field(default=False, description="Skip CV validation")
     max_retries: int = Field(default=settings.MAX_RETRIES, description="Max validation retry attempts")
     model_name: str = Field(default=settings.DEFAULT_MODEL, description="LLM model to use")
 

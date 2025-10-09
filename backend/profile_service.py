@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any
 from .database import Database
 from .models import ProfileData
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class ProfileService:
@@ -10,11 +10,13 @@ class ProfileService:
     def create_profile(user_id: str, profile_data: ProfileData) -> Dict[str, Any]:
         supabase = Database.get_client()
         
+        now = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
+
         data = {
             "user_id": user_id,
             "profile_data": profile_data.model_dump(),
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat()
+            "created_at": now,
+            "updated_at": now
         }
         
         result = supabase.table("profiles").insert(data).execute()
@@ -41,7 +43,7 @@ class ProfileService:
         
         data = {
             "profile_data": profile_data.model_dump(),
-            "updated_at": datetime.utcnow().isoformat()
+            "updated_at": datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
         }
         
         result = supabase.table("profiles").update(data).eq("user_id", user_id).execute()

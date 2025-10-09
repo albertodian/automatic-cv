@@ -1,9 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Dict, Any
 from .auth import get_current_user
-from .models import SignUpRequest, SignInRequest, AuthResponse, ProfileData, ProfileResponse
+from .models import (
+    SignUpRequest,
+    SignInRequest,
+    AuthResponse,
+    ProfileData,
+    AddTokensRequest,
+    TokenBalance,
+    DeductTokensRequest,
+)
 from .profile_service import ProfileService
 from .database import Database
+from .token_service import TokenService
 
 router = APIRouter()
 
@@ -18,11 +27,13 @@ async def sign_up(request: SignUpRequest):
             "password": request.password
         })
         
-        if not response.user:
+        if not response.user or not response.session:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Failed to create user"
             )
+
+        balance = TokenService.initialize_balance(response.user.id)
         
         return AuthResponse(
             access_token=response.session.access_token,
@@ -31,7 +42,8 @@ async def sign_up(request: SignUpRequest):
                 "id": response.user.id,
                 "email": response.user.email,
                 "created_at": response.user.created_at
-            }
+            },
+            token=balance["token"],
         )
     
     except Exception as e:
@@ -51,11 +63,13 @@ async def sign_in(request: SignInRequest):
             "password": request.password
         })
         
-        if not response.user:
+        if not response.user or not response.session:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials"
             )
+
+        balance = TokenService.get_balance(response.user.id)
         
         return AuthResponse(
             access_token=response.session.access_token,
@@ -64,7 +78,8 @@ async def sign_in(request: SignInRequest):
                 "id": response.user.id,
                 "email": response.user.email,
                 "created_at": response.user.created_at
-            }
+            },
+            token=balance["token"],
         )
     
     except Exception as e:
@@ -131,3 +146,34 @@ async def delete_profile(current_user: Dict[str, Any] = Depends(get_current_user
         )
     
     return {"message": "Profile deleted successfully"}
+
+
+@router.get("/tokens", response_model=TokenBalance, tags=["Tokens"])
+async def get_tokens(current_user: Dict[str, Any] = Depends(get_current_user)):
+    balance = TokenService.get_balance(current_user["id"])
+    return balance
+
+
+@router.post("/tokens/add", response_model=TokenBalance, tags=["Tokens"])
+async def add_tokens(
+    request: AddTokensRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    balance = TokenService.add_tokens(current_user["id"], request.amount)
+    return balance
+
+
+@router.post("/tokens/deduct", response_model=TokenBalance, tags=["Tokens"])
+async def deduct_tokens(
+    request: DeductTokensRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    try:
+        balance = TokenService.deduct_tokens(current_user["id"], request.amount)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc)
+        )
+
+    return balance

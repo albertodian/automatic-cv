@@ -17,6 +17,7 @@ class AuthResponse(BaseModel):
     access_token: str
     refresh_token: str
     user: dict
+    token: int
 
 
 class PersonalInfo(BaseModel):
@@ -75,3 +76,16 @@ class ProfileResponse(BaseModel):
     profile_data: ProfileData
     created_at: datetime
     updated_at: datetime
+
+
+class TokenBalance(BaseModel):
+    token: int = Field(ge=0)
+    updated_at: Optional[datetime] = None
+
+
+class AddTokensRequest(BaseModel):
+    amount: int = Field(gt=0)
+
+
+class DeductTokensRequest(BaseModel):
+    amount: int = Field(gt=0)
