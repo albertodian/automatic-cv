@@ -40,3 +40,4 @@ pdf2image>=1.16.0
 
 # Auth and Storage
 supabase==2.3.0
+email-validator>=2.0.0

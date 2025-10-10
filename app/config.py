@@ -2,7 +2,7 @@
 Configuration settings for the FastAPI application.
 """
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 import os
 
@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # Server Settings
     HOST: str = "0.0.0.0"
     PORT: int = 8000
-    RELOAD: bool = True  # Set to False in production
+    RELOAD: bool = False  # Set to False in production
     
     # CORS Settings
     CORS_ORIGINS: List[str] = ["*"]  # Update with specific origins in production
@@ -43,9 +43,11 @@ class Settings(BaseSettings):
     # API Keys (loaded from environment)
     REPLICATE_API_TOKEN: str = os.getenv("REPLICATE_API_TOKEN", "")
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore"  # This allows extra env vars like SUPABASE_URL without errors
+    )
 
 
 # Global settings instance
