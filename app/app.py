@@ -425,6 +425,80 @@ async def generate_cv(request: GenerateCVRequest):
             status_code=500,
             detail=f"Error generating CV: {str(e)}"
         )
+
+@app.post("/api/cv/generate-from-file", response_model=CVResponse, tags=["CV Generation"])
+async def generate_cv_from_file(request: GenerateCVFromFileRequest):
+    """
+    Generate optimized CV using profile from file (data/profile.json) using RAG.
+    
+    This endpoint:
+    1. Loads profile from data/profile.json (or specified path)
+    2. Parses job description
+    3. Uses RAG to retrieve relevant experiences and projects
+    4. Optimizes your CV using AI to match the job requirements
+    5. Validates the output 
+    6. Applies ATS optimization
+    7. Returns the optimized CV data (JSON format)
+    
+    Perfect for users who have a profile.json file but haven't uploaded a CV.
+    """
+    try:
+        # Load profile from file
+        profile_dict = load_profile(request.profile_path)
+        
+        # Extract job information
+        job_info = extract_relevant_job_info(
+            request.job_description, 
+            request.model_name
+        )
+        
+        # RAG-enhanced generation
+        rag_system = CVRAGSystem()
+        rag_system.reset_database()
+        rag_system.index_profile(profile_dict)
+        
+        rag_generator = RAGEnhancedGenerator(rag_system)
+        
+        optimized_profile = rag_generator.generate_optimized_profile_with_rag(
+            profile=profile_dict,
+            job_info=job_info,
+            llm_function=generate_optimized_profile,
+            model_name=request.model_name
+        )
+        
+        # Validation
+        optimized_profile, fix_messages = fix_cv(
+            profile=optimized_profile,
+            original_profile=profile_dict,
+            auto_fix=True
+        )
+        
+        # ATS optimization
+        optimized_profile, ats_result, iterations = refine_cv_for_ats(
+            profile=optimized_profile,
+            job_keywords=job_info.get('keywords', []),
+            model_name=request.model_name,
+            max_iterations=3,
+            target_score=90.0,
+            min_improvement=5.0
+        )
+        
+        return CVResponse(
+            success=True,
+            profile=optimized_profile,
+            message=f"CV successfully generated from profile.json! ATS Score: {ats_result['score']:.1f}% (Iterations: {iterations})"
+        )
+    
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Profile file not found at {request.profile_path}. Please create data/profile.json or upload a CV."
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating CV: {str(e)}"
+        )
     
 @app.post("/api/cv/generate-authenticated", response_model=CVResponse, tags=["CV Generation (Authenticated)"])
 async def generate_cv_authenticated(

@@ -18,6 +18,7 @@ from typing import Dict, List, Tuple, Any
 def expand_abbreviations(text: str) -> str:
     """
     Expand common tech abbreviations to full terms for MAXIMUM ATS compatibility.
+    Handles already-expanded forms intelligently to avoid double expansion.
     
     Args:
         text: Text to expand
@@ -25,11 +26,13 @@ def expand_abbreviations(text: str) -> str:
     Returns:
         Text with abbreviations expanded
     """
+    import re
+    
     # Comprehensive tech abbreviations (60+ terms for maximum ATS scores)
     abbreviations = {
         # AI/ML
         'ML': 'Machine Learning (ML)',
-        'AI': 'Artificial Intelligence (AI)',
+        'AI': 'Artificial Intelligence (AI)', 
         'LLM': 'Large Language Model (LLM)',
         'LLMs': 'Large Language Models (LLMs)',
         'NLP': 'Natural Language Processing (NLP)',
@@ -66,8 +69,6 @@ def expand_abbreviations(text: str) -> str:
         
         # DevOps/Cloud
         'CI/CD': 'Continuous Integration/Continuous Deployment (CI/CD)',
-        'CI': 'Continuous Integration (CI)',
-        'CD': 'Continuous Deployment (CD)',
         'AWS': 'Amazon Web Services (AWS)',
         'GCP': 'Google Cloud Platform (GCP)',
         'Azure': 'Microsoft Azure',
@@ -118,14 +119,37 @@ def expand_abbreviations(text: str) -> str:
         'IaaS': 'Infrastructure as a Service (IaaS)',
     }
     
-    # Only expand if abbreviation appears standalone (not already expanded)
-    import re
+    # First, clean up any malformed double expansions
+    # e.g., "Continuous Integration/Continuous Deployment (Continuous Integration (CI)/Continuous Deployment (CD))"
+    # Should become: "Continuous Integration/Continuous Deployment (CI/CD)"
+    text = re.sub(
+        r'Continuous Integration/Continuous Deployment \(Continuous Integration \(CI\)/Continuous Deployment \(CD\)\)',
+        'Continuous Integration/Continuous Deployment (CI/CD)',
+        text
+    )
+    
+    # Clean up other nested parentheses patterns
+    text = re.sub(
+        r'(\w+(?:\s+\w+)*)\s+\(\1\s+\(([^)]+)\)\)',
+        r'\1 (\2)',
+        text
+    )
+    
+    # Now expand standalone abbreviations
     for abbr, full in abbreviations.items():
-        # Check if already expanded
-        if full not in text:
-            # Replace standalone occurrences (word boundaries)
-            pattern = r'\b' + re.escape(abbr) + r'\b'
-            text = re.sub(pattern, full, text, count=1)  # Only first occurrence to avoid repetition
+        # Skip if the full form already exists in text
+        if full in text:
+            continue
+        
+        # Pattern to match standalone abbreviation not already in parentheses
+        # Negative lookbehind: not preceded by '('
+        # Negative lookahead: not followed by ')' or already part of expanded form
+        pattern = r'(?<!\()\b' + re.escape(abbr) + r'\b(?!\))'
+        
+        # Check if abbreviation exists standalone
+        if re.search(pattern, text):
+            # Replace only the first standalone occurrence
+            text = re.sub(pattern, full, text, count=1)
     
     return text
 

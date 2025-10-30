@@ -10,21 +10,33 @@ ATS SCORING FORMULA (Target: 90%+):
 - Structure (20%): Standard sections, clean formatting
 
 CRITICAL CONSTRAINTS:
-1. USE ALL PROVIDED CONTENT
+1. PRESERVE PERSONAL INFO (MANDATORY - with specific exclusions)
+   - ✅ MUST INCLUDE these fields EXACTLY: name, email, phone, linkedin, github, languages
+   - ❌ MUST EXCLUDE these fields: age, nationality (privacy/discrimination concerns - DO NOT include them)
+   - Keep linkedin and github URLs exactly as provided
+   - Keep all language proficiency levels exactly as provided
+   - DO NOT add any fields beyond the required ones
+
+2. USE ALL PROVIDED CONTENT
    - All experiences in the input have been RAG-selected for relevance
    - All projects in the input have been RAG-selected for relevance
    - DO NOT exclude any provided items unless they exceed page limits
    - DO NOT create, invent, or merge entries
    - Keep titles, companies, and names EXACT
 
-2. ONE-PAGE REQUIREMENTS (if content exceeds limits)
-   - If >3 experiences: Keep top 3 by relevance score
-   - If >4 projects: Keep top 4 by relevance score
-   - Maximum 3-4 bullets per experience
-   - Each bullet must stay under 22 words, capturing one quantifiable accomplishment
-   - Total items: 5-7 (experiences + projects)
+3. ONE-PAGE REQUIREMENTS (CRITICAL - CV must fit on ONE page)
+   - Target: Maximum 2-3 experiences, 3-5 projects (adjust to fit one page)
+   - If content exceeds one page: prioritize by relevance and recency
+   - EXACTLY 3 bullets per experience (HARD LIMIT - condense if needed)
+   - Each bullet must stay under 18 words for conciseness
+   - Focus on impact and keywords, not length
+   - Remove less relevant items to ensure one-page fit
+   - If keeping all items makes CV exceed one page, prioritize:
+     * Most recent and relevant experiences
+     * Projects that match job requirements
+     * Items with quantifiable achievements
 
-3. SKILLS OPTIMIZATION (ATS-Critical)
+4. SKILLS OPTIMIZATION (ATS-Critical)
    - Skills are already prioritized by RAG system (job-relevant first)
    - ⚠️ CRITICAL: ONLY include skills that match the job requirements
    - Remove ANY skills not relevant to this specific job (e.g., no "Adobe Creative Suite" for ML roles)
@@ -35,13 +47,16 @@ CRITICAL CONSTRAINTS:
    - Use full forms AND abbreviations: "Machine Learning (ML)", "API Development"
    - ❌ DO NOT include unrelated skills just to fill space
 
-4. KEYWORD ENHANCEMENT (Target: 3-5 mentions per critical keyword)
+5. KEYWORD ENHANCEMENT (Target: 3-5 mentions per critical keyword)
    - Focus on ENHANCING descriptions, not selecting content
-   - Weave job keywords naturally throughout descriptions
+   - Weave job keywords naturally into descrition_list bullets
    - Each critical keyword should appear 3-5 times across CV
    - Quantify achievements where possible (numbers boost ATS)
    - Update skill arrays within each item (max 10 per item)
    - Use action verbs: "Developed", "Implemented", "Optimized", "Designed"
+   - EXACTLY 3 bullets per experience (≤18 words each, condensed with keywords)
+   - DO NOT include experience.description field in output
+   - Education descriptions: avoid forcing keywords, keep natural and relevant
 
 PROCESS:
 Step 1: Understand RAG scores
@@ -147,7 +162,11 @@ YOU MUST USE THESE EXACT FIELD NAMES OR THE CV WILL BE BROKEN:
   "personal_info": {{
     "name": "Full Name",
     "email": "email@example.com",
-    "phone": "+1234567890"
+    "phone": "+1234567890",
+    "linkedin": "https://linkedin.com/in/user",
+    "github": "https://github.com/user",
+    "languages": ["Language1", "Language2"]
+    ⚠️ EXCLUDE: age, nationality (do not include these fields)
   }},
   "summary": "Two sentences with 4-5 keywords.",
   
@@ -155,33 +174,39 @@ YOU MUST USE THESE EXACT FIELD NAMES OR THE CV WILL BE BROKEN:
     {{
       "title": "Job Title",
       "company": "Company Name",
-      "years": "Apr 2023 - Jun 2023",        ← MUST BE "years" (plural) NOT "date"!
       "location": "City, Country",
-      "descrition_list": [                   ← MUST BE "descrition_list" (ARRAY with typo!)
-        "Bullet point 1 with keywords",
-        "Bullet point 2 with keywords",
-        "Bullet point 3 with keywords"
+      "years": "Apr 2023 - Jun 2023",        ← MUST BE "years" (plural) NOT "date"!
+      "descrition_list": [                   ← EXACTLY 3 bullets, ≤18 words each
+        "Condensed bullet 1 with keywords",
+        "Condensed bullet 2 with keywords",
+        "Condensed bullet 3 with keywords"
       ],
-      "skills": ["Skill1", "Skill2"]
+      "skills": ["Skill1", "Skill2"],
+      "reference": "Dr. Name" or "",         ← MUST have (can be empty string)
+      "reference_letter_url": "url" or ""    ← MUST have (can be empty string)
+      ⚠️ DO NOT include "description" field for experience
     }}
   ],
   
   "projects": [
     {{
       "name": "Project Name",
+      "role": "Developer" or "",             ← MUST have (can be empty string)
       "year": "Feb 2024 - Jun 2024",         ← MUST BE "year" (singular) NOT "date"!
       "description": "Single text description with keywords and technical details",  ← MUST BE "description" (STRING, no typo!)
-      "skills": ["Tech1", "Tech2"]
+      "skills": ["Tech1", "Tech2"],
+      "url": "https://..." or ""             ← MUST have (can be empty string)
     }}
   ],
   
   "education": [
     {{
-      "degree": "Degree Name",               ← Condense the degree's title in one single string, and do not include the location/institution in the title (NOT like "Double Master Degree in Robotics and Artificial Intelligence; Master in Mechatronics Engineering of Trento")
+      "degree": "Degree Name",
       "institution": "University Name",
-      "year": "Sep 2020 - Jul 2023",         ← MUST BE "year" NOT "date"!
       "location": "City, Country",
-      "description": ""
+      "year": "Sep 2020 - Jul 2023",         ← MUST BE "year" NOT "date"!
+      "description": "Natural description",  ← Keep natural, avoid forcing keywords
+      "grade": "104/110" or ""               ← MUST have this field (can be empty)
     }}
   ],
   
@@ -193,16 +218,28 @@ YOU MUST USE THESE EXACT FIELD NAMES OR THE CV WILL BE BROKEN:
 }}
 
 🚨 THESE FIELD NAMES ARE MANDATORY 🚨
-❌ WRONG: "date", "period", "dates"
+
+PERSONAL INFO FIELDS:
+✅ REQUIRED: name, email, phone, linkedin, github, languages
+❌ EXCLUDE: age, nationality (privacy/discrimination concerns)
+
+REQUIRED FIELDS BY SECTION:
+✅ experience[] MUST have: title, company, location, years, descrition_list (3 bullets max), skills, reference, reference_letter_url
+   ❌ DO NOT include: description field
+✅ projects[] MUST have: name, role, year, description, skills, url
+✅ education[] MUST have: degree, institution, location, year, description (natural, no forced keywords), grade
+
+DATE FIELD NAMES:
+❌ WRONG: "date", "period", "dates", "bullets"
 ✅ CORRECT: 
    - experience[].years (plural)
-   - experience[].descrition_list (ARRAY with typo)
+   - experience[].description (STRING context)
+   - experience[].descrition_list (ARRAY with typo!)
    - projects[].year (singular)
    - projects[].description (STRING, no typo!)
    - education[].year (singular)
-   - education[].description (STRING, no typo!)
 
-IF YOU USE WRONG FIELD NAMES, THE CV WILL RENDER WITH MISSING DATES!
+IF YOU USE WRONG FIELD NAMES OR DROP PERSONAL INFO, THE CV WILL BE BROKEN!
 
 SKILLS FILTERING EXAMPLES:
 

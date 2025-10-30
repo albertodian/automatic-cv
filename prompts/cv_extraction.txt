@@ -45,8 +45,6 @@ YOU MUST USE THESE EXACT FIELD NAMES:
     "name": "Full Name",
     "email": "email@example.com",
     "phone": "+1234567890",
-    "nationality": "Country",            ← Extract if present, empty string if not
-    "age": 25,                           ← Extract if present, null if not
     "linkedin": "linkedin.com/in/user",  ← Extract if present, empty string if not
     "github": "github.com/user",         ← Extract if present, empty string if not
     "languages": ["Language1", "Language2"]

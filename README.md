@@ -2,8 +2,6 @@
 
 An intelligent **RAG-powered CV optimization system** that uses **Retrieval-Augmented Generation** to create perfectly tailored, ATS-optimized CVs for any job posting. Combines semantic search with LLMs for maximum relevance and precision.
 
-> **🚂 Production-ready on Railway** - Handles 60-150s LLM + PDF generation without timeouts!
-
 ## ✨ Key Features
 
 ### � RAG-Powered Intelligence
@@ -204,13 +202,15 @@ automatic-cv/
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### 🌐 **Option 1: Web Interface (Easiest!)**
 
+The simplest way to use the CV generator is through the web interface:
+
+#### 1. **Prerequisites**
 - **Python 3.10+**
 - **Replicate API Token** (get it from [replicate.com](https://replicate.com))
-- **Tesseract OCR** (optional, for scanned PDFs)
 
-### Installation
+#### 2. **Installation**
 
 ```bash
 # Clone the repository
@@ -225,9 +225,85 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Set up environment variables
-cp .env.example .env
-# Edit .env and add your REPLICATE_API_TOKEN
+echo "REPLICATE_API_TOKEN=your_token_here" > .env
 ```
+
+#### 3. **Start the Server**
+
+```bash
+# Start the FastAPI server
+python app/app.py
+
+# Or use uvicorn directly
+uvicorn app.app:app --host 0.0.0.0 --port 8000 --reload
+```
+
+The server will start at **http://localhost:8000**
+
+#### 4. **Open the Web Interface**
+
+Simply open `index.html` in your browser:
+
+```bash
+# Option A: Open directly in browser
+open index.html  # macOS
+start index.html  # Windows
+xdg-open index.html  # Linux
+
+# Option B: Serve with Python (recommended)
+python -m http.server 3000
+# Then visit http://localhost:3000
+```
+
+#### 5. **Generate Your CV**
+
+1. **Upload your resume (PDF)** - The system will extract your information
+2. **Paste the job description** - Copy from any job posting
+3. **Click "Generate Optimized CV"** - Wait 30-60 seconds
+4. **Download your optimized CV data** - JSON format ready for PDF rendering
+
+✅ **That's it!** The web interface handles everything:
+- PDF resume extraction
+- RAG-powered optimization
+- ATS scoring and refinement
+- Real-time status updates
+
+---
+
+### 💻 **Option 2: CLI Usage (Advanced)**
+
+For automation and scripting, use the command-line interface:
+
+```bash
+# Generate CV from job URL
+python src/main_rag.py --url "https://linkedin.com/jobs/view/123456" --template modern
+
+# Extract your resume from PDF
+python src/main_rag.py --resume
+
+# Generate from saved job description
+python src/main_rag.py --template tech
+```
+
+See the [CLI Usage](#-cli-usage) section below for more details.
+
+---
+
+### 🔧 **Option 3: Direct API Calls**
+
+Use the REST API directly for custom integrations:
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Generate CV
+curl -X POST "http://localhost:8000/api/cv/generate" \
+  -H "Content-Type: application/json" \
+  -d @request.json
+```
+
+See the [REST API Usage](#-rest-api-usage) section below for more details.
 
 ---
 

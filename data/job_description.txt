@@ -1,107 +1,33 @@
-👋 Chi siamo
+Our client is a leading international IT company delivering innovative digital solutions across 15+ industries. With expertise in geoinformatics, data science, software development, and automation, they support organisations in over 80 countries by creating technology that drives efficiency, compliance, and smarter decision-making.
 
 
-
-Siamo una startup, una tech company e un gruppo di persone determinato ad avere un impatto positivo sulla società. Siamo anche uno dei centri medici più grandi in Italia, con più di 1.200.000 sedute svolte negli ultimi quattro anni.
-Cerchiamo di aiutare le persone a prendersi cura della mente e del corpo. Usiamo la tecnologia per rimuovere gli ostacoli pratici e la comunicazione per affrontare quelli culturali. Poi viene la parte difficile: ma per fortuna possiamo contare su una rete di migliaia di professionisti esperti, tutti selezionati dal nostro team clinico.
-Serenis è stata creata da due second-time founders: Silvia Wang e Daniele Francescon. Numeri alla mano, oggi è una delle migliori startup in Europa. Ha ovviamente dei difetti su cui lavoriamo tutti i giorni, e che ci aiuterai a smussare.
-Sappiamo di avere una grande responsabilità. Per questo crediamo nei dati, nell’innovazione e nei lavori fatti bene – fatti bene da persone che tengono a quello che fanno.
+They are now investing in AI-driven capabilities and looking for a talented AI Engineer to shape and lead these initiatives.
 
 
-🎯 Cosa farai
+The Role
+This is a greenfield position, giving you the chance to design, experiment, and integrate AI solutions directly into products. You’ll have ownership of your initiatives and the opportunity to set the direction for AI within the company’s technology landscape.
 
 
-
-Entrerai a far parte del team Innovation di Serenis, completando una squadra che ha il focus principale di portare innovazione (AI in primis ma non solo) sia nel prodotto che nel team Serenis.
-Lavorerai a diretto contatto con il Chief Innovation Officer e con gli altri AI Engineers/Developers, ma sarai a stretto contatto anche con molti altri team, specialmente Engineering e Product.
-C'è tanto da fare e dobbiamo essere bravi a prioritizzare e produrre. È una momento unico in cui entrare per avere un impatto concreto e lavorare ad innovazioni molto ambiziose. Ti occuperai principalmente, ma non solo, di:
-
-
-Model Selection e Benchmarking: valutare e confrontare diversi LLM (GPT, Claude, Llama, Gemini, Mistral, etc.) attraverso benchmark personalizzati sui nostri casi d'uso. Definire metriche di performance specifiche per il dominio healthcare e implementare framework di testing automatizzati.
-Fine-tuning e Ottimizzazione: progettare e implementare strategie di fine-tuning per modelli open-source, gestire dataset di training domain-specific, e ottimizzare le performance attraverso tecniche come LoRA e QLoRA.
-Architettura AI e MLOps: progettare pipeline end-to-end per il deployment di LLM in produzione, implementare sistemi di monitoring e observability, gestire A/B testing.
-RAG e Knowledge Systems: sviluppare sistemi di Retrieval-Augmented Generation, implementare strategie di chunking e retrieval avanzate.
-Costruzione di AI Agents: progettare e sviluppare agenti che possano automatizzare processi interni, assistere utenti e professionisti, e migliorare l'efficienza dei nostri servizi.
-Context Engineering e ottimizzazione: progettare architetture di contesto complesse, gestire e ottimizzare l'interazione con i modelli attraverso tecniche di prompt engineering avanzate
-AI Safety e Governance: implementare guardrails per modelli AI in ambito healthcare, sviluppare sistemi di detection per output inappropriati, gestire compliance e audit trail per decisioni AI-assisted.
+Key Responsibilities
+Experiment with pretrained models and develop custom AI solutions
+Integrate AI into products to optimise workflows and improve knowledge access
+Work with LLMs, RAG, and AI-driven tools for client documentation and policy validation
+Conduct R&D, propose new initiatives, and drive innovation within the dev team
 
 
-🦄 Ci piacerai se
+Your Profile
+Master’s degree preferred; Bachelor’s also considered
+Strong skills in Python and/or data analysis / data science
+First hands-on experience in AI/ML projects
+Ideally knowledge of ML, DL and/or NLP
+Bonus: experience with CI/CD pipelines and containerisation
+Analytical, forward-thinking mindset with an interest in mathematics
+Fluent in English, German is a plus
 
 
-
-Hai già esperienze in ambito di LLM, con conoscenza pratica di fine-tuning, famiglie di modelli (transformers-based, MoE) e tecniche di ottimizzazione.
-Hai fame di fare, di provare, di sporcarti le mani e di vedere il risultato del tuo lavoro.
-Hai un’attitudine da problem-solver: pragmatismo e proattività rendono ogni problema un’opportunità.
-Orientamento alla sperimentazione e innovazione: done it’s better than perfect.
-Hai il giusto mix di ambizione e umiltà.
-Giochi di squadra, che vuol dire che metti il team davanti ad ogni individuo singolo.
-Ti ritrovi nei nostri valori: https://www.serenis.it/chi-siamo
-Sei una brava persona (questo vale quanto tutto il resto, e per certi versi anche di più).
-
-
-🛠️ Stack & Skillsets
-
-
-
-Programmazione avanzata in Python con focus su sviluppo di applicazioni AI/ML. Bonus per padronanza di Typescript e Terraform.
-Esperienza hands-on con LLM: hai già lavorato con modelli come GPT, Claude, Llama, Mistral, Gemini. Sai quando usare open source vs proprietari, conosci le loro differenze pratiche e hai esperienza con fine-tuning base su casi d'uso specifici.
-Sviluppo di applicazioni AI: esperienza con framework come LangChain, LlamaIndex, HuggingFace per costruire soluzioni production-ready.
-API e sistemi distribuiti: padronanza di FastAPI/Flask, esperienza con architetture scalabili, caching, e gestione del carico per applicazioni AI.
-Cloud e deployment: esperienza con almeno una cloud platform (AWS, GCP, Azure) per deployment, monitoring e gestione di applicazioni AI.
-Context Engineering: sai progettare sistemi con prompt complessi e implementare tecniche avanzate come RAG e few-shot learning.
-Database e gestione dati: conoscenza di database relazionali e NoSQL, gestione di embeddings e vector databases.
-Testing e benchmarking: capacità di progettare framework di testing per modelli AI, implementare metriche di valutazione specifiche per il dominio healthcare.
-Sicurezza e compliance: comprensione pratica dei principi di AI safety, implementazione di guardrails, e gestione di audit trail per applicazioni healthcare.
-Performance optimization: esperienza nell'ottimizzazione di costi e latenza per sistemi AI in produzione.
-
-
-📦 Come lavoriamo
-
-
-
-Non ci piacciono le gerarchie: preferiamo il gioco di squadra.
-Non ci piace neanche la burocrazia: preferiamo il senso di responsabilità.
-Ci piacciono i numeri: tanto.
-Ci piacciono anche l’umiltà, l’empatia, la voglia di mettersi in discussione, di imparare cose nuove, di sporcarsi le mani quando serve. Poi le laviamo.
-
-
-❤️ Cosa offriamo
-
-
-
-Una RAL di 40-55k. Per profili straordinari potremmo fare qualcosa di più.
-La nostra policy è “Work From Anywhere”: cioè lavora dove vuoi, l’importante è che lavori bene.
-Conoscerai ogni aspetto del business con una trasparenza che ti sorprenderà.
-Sarai parte di quello che pensiamo possa diventare un grande caso di successo (e che in parte lo è già: ma c’è ancora molto da fare).
-Tante persone di talento a cui rubare competenze, idee, metodi di lavoro (soldi no, per favore. Magari qualche matita).
-La soddisfazione di costruire qualcosa di bello e di utile, con un impatto concreto sulla società.
-Se saprai meritarle, molte opportunità di crescita.
-
-
-🎁 Ma anche
-
-
-
-Sedute di terapia, visite di psichiatria e visite nutrizionali gratis, se ti servono.
-Ferie libere e flessibilità totale.
-1 mese in più di maternità e paternità rispetto a quanto previsto per legge.
-Ogni 3 mesi un paio di giorni tutti insieme, a spese dell’azienda (ma non nel weekend: nel weekend si riposa)
-La dotazione IT che ti serve per fare il tuo lavoro al meglio.
-Tante convenzioni aziendali.
-Credito welfare.
-
-
-🌑 Per favore, togli dal CV
-
-
-
-La foto.
-La data di nascita.
-Lo stato coniugale o familiare.
-Altri aspetti identitari che non hanno a che fare con la posizione, come la religione o l'orientamento sessuale.
-
-
-Per due ragioni: la prima è che pensiamo che non sia né giusto né utile considerare questi parametri in un processo di assunzione. La seconda è che non siamo immuni dai pregiudizi, e vogliamo imparare a farne a meno.
-(Poi sì, se la selezione andrà avanti dovremo vederci in faccia, prima o poi; e sì, dalle esperienze lavorative è possibile ricavare l’età. Il senso non è assumere al buio, ma concentrarsi sugli aspetti significativi invece che su quelli superficiali, soprattutto all’inizio).
-Grazie di aver letto fino a qui 💜
+What’s on Offer
+Greenfield projects with freedom to lead AI initiatives
+Exposure to cutting-edge AI model training and integration
+Remote-first role with occasional onsite collaboration
+Small, agile teams with a culture of trust and direct communication
+International environment with direct customer interaction

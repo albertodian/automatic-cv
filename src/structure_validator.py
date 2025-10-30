@@ -128,6 +128,30 @@ def _validate_schema(profile: Dict[str, Any]) -> List[CVValidationIssue]:
                 "Missing email in personal_info",
                 field="email"
             ))
+        
+        # Check for important personal_info fields that should be preserved
+        recommended_fields = ['phone', 'linkedin', 'github', 'languages']
+        for field in recommended_fields:
+            if field not in pi:
+                issues.append(CVValidationIssue(
+                    "missing_personal_field",
+                    CVValidationIssue.SEVERITY_MEDIUM,
+                    f"Missing recommended field in personal_info: {field}",
+                    field=field,
+                    section="personal_info"
+                ))
+        
+        # Check for excluded fields (privacy concerns)
+        excluded_fields = ['age', 'nationality']
+        for field in excluded_fields:
+            if field in pi:
+                issues.append(CVValidationIssue(
+                    "excluded_field_present",
+                    CVValidationIssue.SEVERITY_HIGH,
+                    f"Field should be excluded for privacy: {field}",
+                    field=field,
+                    section="personal_info"
+                ))
     
     # Check minimum content
     if 'experience' in profile and len(profile['experience']) == 0:
@@ -172,6 +196,16 @@ def _validate_template_compatibility(profile: Dict[str, Any]) -> List[CVValidati
                 "wrong_description_field",
                 CVValidationIssue.SEVERITY_HIGH,
                 f"Experience[{i}]: Should use 'descrition_list' (with typo!)",
+                exp_index=i,
+                section="experience"
+            ))
+        
+        # Check for wrong field name 'bullets' instead of 'descrition_list'
+        if 'bullets' in exp and 'descrition_list' not in exp:
+            issues.append(CVValidationIssue(
+                "wrong_description_field",
+                CVValidationIssue.SEVERITY_HIGH,
+                f"Experience[{i}]: Should use 'descrition_list' (with typo!), not 'bullets'",
                 exp_index=i,
                 section="experience"
             ))
@@ -325,17 +359,27 @@ def _validate_content_limits(profile: Dict[str, Any]) -> List[CVValidationIssue]
             max=7
         ))
     
-    # Bullets per experience
+    # Bullets per experience (HARD LIMIT: 3)
     for i, exp in enumerate(profile.get('experience', [])):
         bullets = len(exp.get('descrition_list', []))
-        if bullets > 4:
+        if bullets > 3:
             issues.append(CVValidationIssue(
                 "too_many_bullets",
-                CVValidationIssue.SEVERITY_MEDIUM,
-                f"Experience[{i}]: Too many bullets ({bullets}). Maximum 4 recommended",
+                CVValidationIssue.SEVERITY_HIGH,
+                f"Experience[{i}]: Too many bullets ({bullets}). HARD LIMIT: 3 bullets",
                 exp_index=i,
                 count=bullets,
-                max=4,
+                max=3,
+                section="experience"
+            ))
+        
+        # Check for unwanted description field (should only use descrition_list)
+        if 'description' in exp:
+            issues.append(CVValidationIssue(
+                "unwanted_description_field",
+                CVValidationIssue.SEVERITY_HIGH,
+                f"Experience[{i}]: Should not have 'description' field, only 'descrition_list'",
+                exp_index=i,
                 section="experience"
             ))
     
@@ -399,9 +443,10 @@ def _check_personal_info_fields(profile: Dict[str, Any]) -> List[str]:
     Check which optional personal info fields are empty or missing.
     
     Only checks optional fields that users can fill via UI:
-    - nationality, age, linkedin, github
+    - linkedin, github, languages
     
     Critical fields (name, email, phone) are checked in schema validation.
+    Excluded fields (age, nationality) are removed for privacy.
     
     Returns:
         List of optional field names that are empty or missing (user can fill these via UI)
@@ -409,12 +454,11 @@ def _check_personal_info_fields(profile: Dict[str, Any]) -> List[str]:
     empty_fields = []
     personal_info = profile.get('personal_info', {})
     
-    # Optional fields that can be filled via UI
+    # Optional fields that can be filled via UI (age and nationality EXCLUDED for privacy)
     optional_fields = [
-        'nationality',
-        'age',
         'linkedin',
-        'github'
+        'github',
+        'languages'
     ]
     
     for field in optional_fields:
@@ -477,19 +521,25 @@ def fix_cv(
                 fix_messages.append(msg)
     
     # Ensure optional fields exist in personal_info (so UI can fill them)
+    # Note: age and nationality are EXCLUDED for privacy/discrimination concerns
     if 'personal_info' not in profile:
         profile['personal_info'] = {}
     
     optional_fields_defaults = {
-        'nationality': '',
-        'age': None,
         'linkedin': '',
-        'github': ''
+        'github': '',
+        'languages': []
     }
     
     for field, default in optional_fields_defaults.items():
         if field not in profile['personal_info']:
             profile['personal_info'][field] = default
+    
+    # Ensure excluded fields are removed (age, nationality)
+    excluded_fields = ['age', 'nationality']
+    for field in excluded_fields:
+        if field in profile.get('personal_info', {}):
+            del profile['personal_info'][field]
     
     # Re-validate
     is_valid, remaining_issues = validate_cv(profile, original_profile)
@@ -546,6 +596,16 @@ def _apply_single_fix(
     elif issue.type == "too_many_skills":
         return _fix_too_many_skills(profile, issue)
     
+    # Personal info fixes
+    elif issue.type == "missing_personal_field":
+        return _fix_missing_personal_field(profile, issue, original_profile)
+    
+    elif issue.type == "excluded_field_present":
+        return _fix_excluded_fields(profile, issue)
+    
+    elif issue.type == "unwanted_description_field":
+        return _fix_unwanted_description_field(profile, issue)
+    
     # Schema fixes
     elif issue.type == "missing_section":
         return _fix_missing_section(profile, issue)
@@ -595,6 +655,9 @@ def _fix_description_fields(profile: Dict[str, Any], issue: CVValidationIssue) -
         for exp in profile.get('experience', []):
             if 'description_list' in exp:
                 exp['descrition_list'] = exp.pop('description_list')
+            # Also handle 'bullets' field name
+            if 'bullets' in exp:
+                exp['descrition_list'] = exp.pop('bullets')
         return profile, "Fixed experience description fields -> 'descrition_list' (typo)"
     
     elif section == 'projects':
@@ -731,14 +794,14 @@ def _fix_too_much_content(profile: Dict[str, Any], issue: CVValidationIssue) -> 
 
 
 def _fix_too_many_bullets(profile: Dict[str, Any], issue: CVValidationIssue) -> Tuple[Dict[str, Any], str]:
-    """Reduce bullets per experience to max 4."""
+    """Reduce bullets per experience to max 3 (HARD LIMIT)."""
     exp_index = issue.metadata.get('exp_index')
     if exp_index is not None and exp_index < len(profile.get('experience', [])):
         exp = profile['experience'][exp_index]
         bullets = exp.get('descrition_list', [])
-        if len(bullets) > 4:
-            profile['experience'][exp_index]['descrition_list'] = bullets[:4]
-            return profile, f"Reduced experience[{exp_index}] bullets from {len(bullets)} to 4"
+        if len(bullets) > 3:
+            profile['experience'][exp_index]['descrition_list'] = bullets[:3]
+            return profile, f"Reduced experience[{exp_index}] bullets from {len(bullets)} to 3 (HARD LIMIT)"
     return profile, None
 
 
@@ -766,6 +829,46 @@ def _fix_missing_section(profile: Dict[str, Any], issue: CVValidationIssue) -> T
     if field in defaults:
         profile[field] = defaults[field]
         return profile, f"Added missing section: {field}"
+    return profile, None
+
+
+def _fix_missing_personal_field(
+    profile: Dict[str, Any],
+    issue: CVValidationIssue,
+    original_profile: Optional[Dict[str, Any]]
+) -> Tuple[Dict[str, Any], str]:
+    """Restore missing personal_info field from original profile."""
+    if not original_profile or 'personal_info' not in original_profile:
+        return profile, None
+    
+    field = issue.metadata.get('field')
+    if field and field in original_profile['personal_info']:
+        # Restore the field from original
+        if 'personal_info' not in profile:
+            profile['personal_info'] = {}
+        profile['personal_info'][field] = original_profile['personal_info'][field]
+        return profile, f"Restored personal_info.{field} from original profile"
+    
+    return profile, None
+
+
+def _fix_excluded_fields(profile: Dict[str, Any], issue: CVValidationIssue) -> Tuple[Dict[str, Any], str]:
+    """Remove excluded fields (age, nationality) from personal_info for privacy."""
+    field = issue.metadata.get('field')
+    if field and 'personal_info' in profile and field in profile['personal_info']:
+        del profile['personal_info'][field]
+        return profile, f"Removed {field} field from personal_info (privacy/discrimination concerns)"
+    return profile, None
+
+
+def _fix_unwanted_description_field(profile: Dict[str, Any], issue: CVValidationIssue) -> Tuple[Dict[str, Any], str]:
+    """Remove unwanted description field from experience (should only use descrition_list)."""
+    exp_index = issue.metadata.get('exp_index')
+    if exp_index is not None and exp_index < len(profile.get('experience', [])):
+        exp = profile['experience'][exp_index]
+        if 'description' in exp:
+            del exp['description']
+            return profile, f"Removed unwanted 'description' field from experience[{exp_index}]"
     return profile, None
 
 

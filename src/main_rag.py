@@ -119,7 +119,7 @@ def main():
         llm_function=generate_optimized_profile,
         model_name="openai/gpt-4.1-mini"
     )
-
+    
     # Validate and fix structure
     print("Validating and fixing CV structure...")
     final_profile, fix_messages = fix_cv(

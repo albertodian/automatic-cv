@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automatic CV Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge {
+            background: #667eea;
+            color: white;
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e8edff;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border-left: 4px solid #1976d2;
+        }
+
+        .status.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #2e7d32;
+        }
+
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #c62828;
+        }
+
+        .status.warning {
+            background: #fff3e0;
+            color: #ef6c00;
+            border-left: 4px solid #ef6c00;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .file-info {
+            margin-top: 15px;
+            padding: 12px;
+            background: #e8f5e9;
+            border-radius: 6px;
+            color: #2e7d32;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .progress-container {
+            margin-top: 15px;
+            display: none;
+        }
+
+        .progress-container.show {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .note {
+            background: #fff9e6;
+            border-left: 4px solid #ffd700;
+            padding: 12px;
+            margin-top: 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .note strong {
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Automatic CV Generator</h1>
+        <p class="subtitle">Upload your resume and paste a job description to generate an optimized CV</p>
+
+        <!-- Step 1: Upload CV -->
+        <div class="section">
+            <div class="section-title">
+                <span>Step 1: Upload Your Resume (PDF)</span>
+                <span class="badge">Optional - Uses profile.json if skipped</span>
+            </div>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📄</div>
+                <p><strong>Click to upload</strong> or drag and drop</p>
+                <p style="color: #999; font-size: 14px; margin-top: 5px;">PDF files only (Max 10MB) • Skip to use data/profile.json</p>
+                <input type="file" id="fileInput" accept=".pdf">
+            </div>
+            <div class="file-info" id="fileInfo">
+                ✓ <strong id="fileName"></strong> uploaded successfully
+            </div>
+        </div>
+
+        <!-- Step 2: Job Description -->
+        <div class="section">
+            <div class="section-title">
+                <span>Step 2: Paste Job Description</span>
+                <span class="badge">Required</span>
+            </div>
+            <textarea 
+                id="jobDescription" 
+                placeholder="Paste the job description here...&#10;&#10;Example:&#10;Job Title: Senior Software Engineer&#10;Requirements: 5+ years experience with Python, FastAPI, React...&#10;Responsibilities: Design and develop scalable applications..."
+            ></textarea>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="button-group">
+            <button class="btn-secondary" id="clearBtn">
+                🗑️ Clear All
+            </button>
+            <button class="btn-primary" id="generateBtn">
+                ✨ Generate Optimized CV
+            </button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 100%"></div>
+            </div>
+        </div>
+
+        <!-- Status Messages -->
+        <div class="status" id="status"></div>
+
+        <!-- Note -->
+        <div class="note">
+            <strong>💡 Tip:</strong> If you don't upload a resume, the system will automatically use your 
+            <code>data/profile.json</code> file. Make sure this file exists and contains your information. 
+            You can also create a profile by signing up and using the API endpoint <code>/api/v1/profile</code>.
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        
+        let uploadedFile = null;
+        let extractedProfile = null;
+
+        // Elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const jobDescription = document.getElementById('jobDescription');
+        const generateBtn = document.getElementById('generateBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const status = document.getElementById('status');
+        const progressContainer = document.getElementById('progressContainer');
+
+        // Upload Area Click
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // File Input Change
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // Drag and Drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect();
+            }
+        });
+
+        // Handle File Selection
+        async function handleFileSelect() {
+            const file = fileInput.files[0];
+            
+            if (!file) return;
+            
+            // Validate file type
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+                showStatus('error', '❌ Please upload a PDF file');
+                return;
+            }
+            
+            // Validate file size (10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                showStatus('error', '❌ File size must be less than 10MB');
+                return;
+            }
+            
+            uploadedFile = file;
+            fileName.textContent = file.name;
+            fileInfo.classList.add('show');
+            
+            // Extract CV data from PDF
+            await extractCVFromPDF(file);
+        }
+
+        // Extract CV from PDF
+        async function extractCVFromPDF(file) {
+            showStatus('info', '🔄 Extracting data from your resume...');
+            showProgress(true);
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/cv/extract`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to extract CV: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                extractedProfile = data.profile;
+                
+                showStatus('success', '✅ Resume data extracted successfully! Now paste the job description.');
+            } catch (error) {
+                console.error('Error extracting CV:', error);
+                showStatus('error', `❌ Error extracting resume: ${error.message}`);
+                uploadedFile = null;
+                extractedProfile = null;
+                fileInfo.classList.remove('show');
+            } finally {
+                showProgress(false);
+            }
+        }
+
+        // Generate CV
+        generateBtn.addEventListener('click', async () => {
+            const jobDesc = jobDescription.value.trim();
+
+            // Validation
+            if (!jobDesc) {
+                showStatus('warning', '⚠️ Please paste a job description');
+                return;
+            }
+
+            // Disable button
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<div class="spinner"></div> Generating CV...';
+            showProgress(true);
+            showStatus('info', '🤖 AI is optimizing your CV for this job... This may take 30-60 seconds.');
+
+            try {
+                let response;
+                
+                // If user uploaded a CV, use the extracted profile
+                if (extractedProfile) {
+                    response = await fetch(`${API_BASE_URL}/api/cv/generate`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            profile: extractedProfile,
+                            job_description: jobDesc,
+                            template: 'tech',
+                            model_name: 'openai/gpt-4.1-mini'
+                        })
+                    });
+                } else {
+                    // Otherwise, use the profile.json file
+                    showStatus('info', '📂 No CV uploaded. Using profile from data/profile.json...');
+                    response = await fetch(`${API_BASE_URL}/api/cv/generate-from-file`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            profile_path: 'data/profile.json',
+                            job_description: jobDesc,
+                            template: 'modern',
+                            model_name: 'openai/gpt-4.1-mini'
+                        })
+                    });
+                }
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to generate CV');
+                }
+
+                const data = await response.json();
+                
+                showStatus('success', `✅ ${data.message || 'CV generated successfully!'}<br><br>` +
+                    `📊 <strong>Optimized Profile Data:</strong><br>` +
+                    `<pre style="margin-top: 10px; padding: 10px; background: white; border-radius: 6px; overflow-x: auto; max-height: 300px;">${JSON.stringify(data.profile, null, 2)}</pre><br>` +
+                    `💡 <strong>Next Step:</strong> Use this JSON data with the <code>/api/cv/render-stream</code> endpoint to generate a PDF, or copy it to use in your own application.`
+                );
+
+            } catch (error) {
+                console.error('Error generating CV:', error);
+                showStatus('error', `❌ Error: ${error.message}`);
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '✨ Generate Optimized CV';
+                showProgress(false);
+            }
+        });
+
+        // Clear All
+        clearBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            jobDescription.value = '';
+            uploadedFile = null;
+            extractedProfile = null;
+            fileInfo.classList.remove('show');
+            status.classList.remove('show');
+            showStatus('info', '🔄 All fields cleared');
+            setTimeout(() => {
+                status.classList.remove('show');
+            }, 2000);
+        });
+
+        // Helper: Show Status
+        function showStatus(type, message) {
+            status.className = `status ${type} show`;
+            status.innerHTML = message;
+        }
+
+        // Helper: Show Progress
+        function showProgress(show) {
+            if (show) {
+                progressContainer.classList.add('show');
+            } else {
+                progressContainer.classList.remove('show');
+            }
+        }
+
+        // Check API Health on Load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                if (response.ok) {
+                    console.log('✅ API is healthy');
+                } else {
+                    showStatus('warning', '⚠️ API connection issue. Make sure the server is running on http://localhost:8000');
+                }
+            } catch (error) {
+                showStatus('error', '❌ Cannot connect to API. Please start the server with: python app/app.py');
+            }
+        });
+    </script>
+</body>
+</html>

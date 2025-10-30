@@ -80,10 +80,10 @@
   ],
   "projects": [
     {   
-      "name": "Automatic CV Generator",
+      "name": "tuneYourCv",
       "role": "Developer and AI Engineer",
       "year": "2025",
-      "description": "Developed a system to modify your CV based on a job description using LLMs to maximise the match between your profile and the job requirements. It renders the result into a clean, ATS-friendly PDF using HTML and CSS templates.",
+      "description": "Developed a system to modify your resume based on a job description using LLMs to maximise the match between your profile and the job requirements. It renders the result into a clean, ATS-friendly PDF using HTML and CSS templates.",
       "skills": ["Ollama", "Python", "LaTeX", "Git", "Playwright", "RestAPI", "UI/UX Design", "Streamlit", "Web Scraping", "Weasyprint", "Agentic AI"],
       "url": "https://github.com/albertodian/automatic-cv"
     },
